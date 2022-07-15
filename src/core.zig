@@ -5,6 +5,8 @@ const Allocator = std.mem.Allocator;
 const strided_arrays = @import("strided-arrays");
 const StridedArrayView = strided_arrays.StridedArrayView;
 
+const log = std.log.scoped(.@"zig-wfc");
+
 const shape_dims = 2;
 
 // up to 256 different tile types
@@ -96,20 +98,20 @@ pub const CellGrid = struct {
         allocator: Allocator,
         input: GenInput,
         seed_array: SeedGrid,
-    ) error{OutOfMemory}!CellGrid {
+    ) error{ OutOfMemory, SeedContradiction }!CellGrid {
         const shape = seed_array.shape;
 
-        var seed_grid = try init(allocator, input.tile_count, shape);
-        errdefer seed_grid.deinit(allocator);
+        var cell_grid = try init(allocator, input.tile_count, shape);
+        errdefer cell_grid.deinit(allocator);
 
-        var iter = seed_grid.cells.iterate();
-        while (iter.nextPtrWithBoth()) |item| {
+        var iter = cell_grid.cells.iterate();
+        while (iter.nextPtrWithCoord()) |item| {
             item.ptr.state = seed_array.get(item.coord);
         }
 
-        try initEnablersSeeded(allocator, seed_grid.cells, input.adjacency_rules);
+        try initEnablersSeeded(allocator, cell_grid.cells, input.adjacency_rules);
 
-        return seed_grid;
+        return cell_grid;
     }
 
     fn initEnablersSeeded(allocator: Allocator, cells: CellArray, adjacency: Adjacencies) !void {
@@ -163,13 +165,19 @@ pub const CellGrid = struct {
                 .superposition => |*possible| {
                     if (possible.isSet(removal.tile_index)) {
                         possible.unset(removal.tile_index);
-                        if (possible.count() == 0) @panic("removed the last possible tile");
+                        if (possible.count() == 0) {
+                            log.err("seed grid does not support a valid solution", .{});
+                            return error.SeedContradiction;
+                        }
                     } else {
                         continue;
                     }
                 },
                 .collapsed => |tile_index| {
-                    if (tile_index == removal.tile_index) @panic("tries to remove the collapsed tile");
+                    if (tile_index == removal.tile_index) {
+                        log.err("seed grid goes not support a valid solution", .{});
+                        return error.SeedContradiction;
+                    }
                 },
             }
             for (directions) |direction| {
@@ -395,7 +403,10 @@ const EntropyHeap = struct {
                         .coord = item_ind.coord,
                     };
                     self.heap.add(item_ind.index) catch {
-                        std.debug.panic("ran out of memory adding entropy coord {d}\nheap has size {d}", .{ item_ind.index, self.heap.items.len });
+                        std.debug.panic(
+                            "ran out of memory adding entropy coord {d}\nheap has size {d}",
+                            .{ item_ind.index, self.heap.items.len },
+                        );
                     };
                 },
             }
@@ -440,16 +451,16 @@ const CoreState = struct {
     weights: []const Weight,
     removals: RemovalStack,
     entropy_heap: EntropyHeap,
-    rng: std.rand.Xoshiro256,
+    random: std.rand.Random,
 
-    fn chooseCellToCollapse(self: *Self) ?Coord {
+    pub fn chooseCellToCollapse(self: *Self) ?Coord {
         const entropy_coord_idx = self.entropy_heap.heap.removeOrNull() orelse return null;
         const entropy_coord = self.entropy_heap.heap.context[entropy_coord_idx];
         return entropy_coord.coord;
     }
 
-    fn observedTile(rng: std.rand.Random, possible: TileSet, weights: []const Weight) TileIndex {
-        var remaining = rng.uintLessThan(usize, Cell.possibleWeight(possible, weights));
+    fn observedTile(random: std.rand.Random, possible: TileSet, weights: []const Weight) TileIndex {
+        var remaining = random.uintLessThan(usize, Cell.possibleWeight(possible, weights));
         var iter = possible.iterator(.{});
         while (iter.next()) |i| {
             const tile_index = @intCast(TileIndex, i);
@@ -484,13 +495,14 @@ const CoreState = struct {
     // TODO: try to avoid oom possibility when propagating/collapsing
     // this can possibly be done by not pushing the removal,
     // marking a dirty removal state, and then doing some kind of scan of all cells
-    /// caller guarantees the coord is valid
-    fn collapseCell(self: *Self, coord: Coord) !void {
-        // var cell = &self.cells.items[index];
+    /// Collapses the cell located at `coord`. To generate a complete tiling, call in
+    /// a loop with `chooseCellToCollapse()`, or use the convenience wrapper `run()`.
+    /// Caller guarantees that `coord` is valid.
+    pub fn collapseCell(self: *Self, coord: Coord) error{ OutOfMemory, Contradiction }!void {
         const cell = self.cell_grid.cells.getPtr(coord);
         switch (cell.state) {
             .superposition => |possible| {
-                const tile_index = observedTile(self.rng.random(), possible, self.weights);
+                const tile_index = observedTile(self.random, possible, self.weights);
                 var iter = possible.iterator(.{});
                 while (iter.next()) |i| {
                     if (i != tile_index) {
@@ -501,6 +513,7 @@ const CoreState = struct {
             },
             .collapsed => @panic("tried to collapse a collapsed cell"),
         }
+        try propagateInfo(self);
     }
 
     fn updateEntropyHeap(self: *Self, old_entropy: f32, new_entropy: f32, coord: Coord) void {
@@ -518,8 +531,7 @@ const CoreState = struct {
         }
     }
 
-    /// returns true if a contradiction was found
-    fn propagateInfo(self: *Self) error{OutOfMemory}!bool {
+    fn propagateInfo(self: *Self) error{ OutOfMemory, Contradiction }!void {
         while (self.removals.popOrNull()) |removal| {
             for (directions) |direction| {
                 const neighbour_coord = neighbouringCoord(removal.coord, direction, self.cell_grid.cells.shape) orelse continue;
@@ -548,7 +560,7 @@ const CoreState = struct {
                         //            in std.math.order
                         if (Cell.hasNoPossibilities(neighbour.state.superposition)) {
                             // contradiction
-                            return true;
+                            return error.Contradiction;
                         }
                         updateEntropyHeap(self, old_entropy, new_entropy, neighbour_coord);
                     }
@@ -556,17 +568,12 @@ const CoreState = struct {
                 }
             }
         }
-        return false;
     }
 
-    fn run(self: *Self) error{OutOfMemory}!bool {
+    fn run(self: *Self) error{ OutOfMemory, Contradiction }!void {
         while (self.chooseCellToCollapse()) |coord| {
             try self.collapseCell(coord);
-            const contradiction = try self.propagateInfo();
-            if (contradiction)
-                return false;
         }
-        return true;
     }
 };
 
@@ -625,10 +632,24 @@ pub fn generateSeededAlloc(
     return output_grid;
 }
 
-/// Modifies cell_grid during execution, and writes ouput to output_grid.
+/// Create a tiling, by making up to `limit` repeated attempts if failures
+/// occur due to reaching a contradiction or running out of memory.
+///
+/// Modifies `cell_grid` during execution, and writes ouput to `output_grid`.
 /// Returns the number of attempts it took to tile the grid successfully.
-/// Each attempt increments `seed` by one, so in the future the same
-/// result can be obtained by using the seed plus the return value.
+///
+/// Returns the number of attempts made before finding a tiling;
+/// each attempt increments random seed by one, so in the future the same
+/// result can be obtained by using the `input.seed` plus the return value
+/// as the chosen seed. Note that if some attempts failed due to an out of
+/// memory error, a future call to `tile()` with the same `seed_grid` and
+/// `input` parameters, but more available memory, may return a different tiling.
+///
+/// Returns `error.AttemptLimitReached` if no tilings are found within
+/// `limit` attempts and no attempts failed due to an out of memory error.
+///
+/// Returns `error.AttemptLimitReachedOOM` if no tililngs are found, but
+/// some attempts failed due to a lack of memory.
 pub fn tile(
     stack_allocator: Allocator,
     entropy_heap: EntropyHeap,
@@ -643,7 +664,7 @@ pub fn tile(
     var attempt_oom = false;
 
     var state = CoreState{
-        .rng = rng,
+        .random = rng.random(),
         .cell_grid = cell_grid,
         .adjacency = input.adjacency_rules,
         .weights = input.weights,
@@ -655,7 +676,7 @@ pub fn tile(
     var attempts: usize = 0;
     while (attempts < limit) : (attempts += 1) {
         // initialise state for this attempt
-        state.rng.seed(input.seed + attempts);
+        rng.seed(input.seed + attempts);
         {
             var iter = state.cell_grid.cells.iterate();
             while (iter.nextPtrWithCoord()) |item| {
@@ -664,17 +685,17 @@ pub fn tile(
                 std.mem.copy(EnablerCounts, item.ptr.enablers, seed.enablers);
             }
         }
-        state.removals.items.len = 0;
+        state.removals.clearRetainingCapacity();
         state.entropy_heap.initEntropies(state.cell_grid, state.weights);
 
-        const success = state.run() catch |err| switch (err) {
-            error.OutOfMemory => success: {
+        state.run() catch |err| switch (err) {
+            error.OutOfMemory => {
                 attempt_oom = true;
-                break :success false;
+                continue;
             },
+            error.Contradiction => continue,
         };
-        if (success)
-            break;
+        break;
     } else {
         return if (attempt_oom) error.AttemptLimitReachedOOM else error.AttemptLimitReached;
     }
