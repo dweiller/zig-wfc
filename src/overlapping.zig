@@ -120,6 +120,7 @@ pub fn overlappingTiles(allocator: Allocator, tile_grid: TileGrid, size: u32) !T
             const gop = try tiles.getOrPut(extract_buf);
             if (gop.found_existing) {
                 gop.value_ptr.count += 1;
+                allocator.free(extract_buf);
             } else {
                 gop.value_ptr.* = Tile{
                     .index = tile_index,
