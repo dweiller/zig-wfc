@@ -17,15 +17,15 @@ The most common situation is generating a 2D or 3D cubic tiling and this library
   - [ ] tile count constraints (i.e. restrict how many times a tile is used)
   - [ ] tile symmetry groups
   - [ ] iterative pipeline
-  - [ ] _n_-dimensonal rectangular tilings
+  - [ ] _n_-dimensional rectangular tilings
   - [ ] hexagonal grid
 
 ## Iterative pipeline
 
-The iterative pipeline is not yet implemented, but is planned for the future. This pipeline is a fairly general idea that produces intermediate tililngs that are used to seed the next stage.
+The iterative pipeline is not yet implemented, but is planned for the future. This pipeline is a fairly general idea that produces intermediate tilings that are used to seed the next stage.
 
 ### Large-scale structure
 
 WFC does not generally produce large-scale structures as the constraints it considers are all local. However, the core tiling algorithm can be used to generate large-scale structure fairly easily using an iterative strategy. The basic idea is to first generate a low resolution tiling which is used to seed subsequent tile generation. The increase in resolution naturally leads to the initial tiling producing large-scale structure.
 
-For example, say you wanted to generate a 2D tiling with some larger-scale structure that includes houses, roads and grass, including more specialised tiles for the boundary regions between the road and a front lawn (like a footpath). You could start by generating a 'seed' tiling at a lower resolution that has the tiles 'property' and 'road'. You then expand this tiling into a higher resolution one initially seeded with 'house', 'footpath' and 'grass' tiles in the regions associated to 'property' tiles and 'road' tiles seeded where the 'road' tiles were. The adjacency constraints for 'footpath' can then require that they border 'road' tiles and 'grass' tiles surround 'house' tiles. This guarantees a minimum size for each large-scale 'property' which are grassy regions (possibly) with house tiles inside them. More passes/subtile types could be added for improved internal structure of a 'property' (e.g. to make 'house' tiles form a connected region or to add a driveway).
+For example, say you wanted to generate a 2D tiling with some larger-scale structure that includes houses, roads and grass, including more specialised tiles for the boundary regions between the road and a front lawn (like a footpath). You could start by generating a 'seed' tiling at a lower resolution that has the tiles 'property' and 'road'. You then expand this tiling into a higher resolution one initially seeded with 'house', 'footpath' and 'grass' tiles in the regions associated to 'property' tiles and 'road' tiles seeded where the 'road' tiles were. The adjacency constraints for 'footpath' can then require that they border 'road' tiles and 'grass' tiles surround 'house' tiles. This guarantees a minimum size for each large-scale 'property' which are grassy regions (possibly) with house tiles inside them. More passes/sub-tile types could be added for improved internal structure of a 'property' (e.g. to make 'house' tiles form a connected region or to add a driveway).
