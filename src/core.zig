@@ -154,7 +154,7 @@ pub const CellGrid = struct {
         while (iter2.nextWithCoord()) |entry| {
             for (entry.val.enablers) |tile_enabler, i| {
                 const tile_index = @intCast(TileIndex, i);
-                if (hasZeroEnablerCount(tile_enabler)) {
+                if (tile_enabler.hasZeroCount()) {
                     try removals.append(.{ .tile_index = tile_index, .coord = entry.coord });
                 }
             }
@@ -306,6 +306,14 @@ const EnablerCounts = struct {
     pub inline fn decr(self: *EnablerCounts, direction: Direction) void {
         self.counts[@enumToInt(direction)] -|= 1;
     }
+
+    fn hasZeroCount(self: EnablerCounts) bool {
+        for (self.counts) |count| {
+            if (count == 0)
+                return true;
+        }
+        return false;
+    }
 };
 
 const Cell = struct {
@@ -413,14 +421,6 @@ const EntropyHeap = struct {
         }
     }
 };
-
-fn hasZeroEnablerCount(counts: EnablerCounts) bool {
-    for (counts.counts) |count| {
-        if (count == 0)
-            return true;
-    }
-    return false;
-}
 
 pub fn neighbouringCoord(coord: Coord, direction: Direction, shape: Shape) ?Coord {
     const positive = direction.positive();
@@ -545,10 +545,6 @@ const CoreState = struct {
                     if (neighbour.state == .superposition and enabler_counts.get(opposite_direction) == 1) {
                         // we're decrementing to zero, so we need to do removal and
                         // push a propagation here
-
-                        // if there is a zero in a diffferent direction we have handled
-                        // removal of this tile possibility in an earlier propagation
-                        // if (!hasZeroEnablerCount(enabler_counts.*)) {
 
                         // ban the tile and update entropy heap (while maintaining size invaraint)
                         const old_entropy = Cell.entropy(neighbour.state.superposition, self.weights);
