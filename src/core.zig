@@ -497,8 +497,9 @@ const CoreState = struct {
     // marking a dirty removal state, and then doing some kind of scan of all cells
     /// Collapses the cell located at `coord`. To generate a complete tiling, call in
     /// a loop with `chooseCellToCollapse()`, or use the convenience wrapper `run()`.
-    /// Caller guarantees that `coord` is valid.
-    pub fn collapseCell(self: *Self, coord: Coord) error{ OutOfMemory, Contradiction }!void {
+    /// Caller guarantees that `coord` is valid. Returns the index of the tile the cell
+    /// is collapsed to.
+    pub fn collapseCell(self: *Self, coord: Coord) error{ OutOfMemory, Contradiction }!TileIndex {
         const cell = self.cell_grid.cells.getPtr(coord);
         switch (cell.state) {
             .superposition => |possible| {
@@ -510,10 +511,11 @@ const CoreState = struct {
                     }
                 }
                 cell.state = Cell.State{ .collapsed = tile_index };
+                try propagateInfo(self);
+                return tile_index;
             },
             .collapsed => @panic("tried to collapse a collapsed cell"),
         }
-        try propagateInfo(self);
     }
 
     fn updateEntropyHeap(self: *Self, old_entropy: f32, new_entropy: f32, coord: Coord) void {
@@ -568,7 +570,7 @@ const CoreState = struct {
 
     fn run(self: *Self) error{ OutOfMemory, Contradiction }!void {
         while (self.chooseCellToCollapse()) |coord| {
-            try self.collapseCell(coord);
+            _ = try self.collapseCell(coord);
         }
     }
 };
