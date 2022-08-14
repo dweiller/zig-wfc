@@ -15,7 +15,9 @@ pub const Weight = u8;
 
 pub const TileGrid = StridedArrayView(TileIndex, 2);
 const Shape = TileGrid.Indices;
-const Coord = TileGrid.Indices;
+pub const Coord = TileGrid.Indices;
+
+pub const Error = error { OutOfMemory, Contradiction };
 
 pub const SeedGrid = StridedArrayView(Cell.State, 2);
 
@@ -443,7 +445,7 @@ fn neighbouringCell(cells: CellGrid.CellArray, coord: Coord, direction: Directio
     return cells.get(neighbour_coord);
 }
 
-const CoreState = struct {
+pub const CoreState = struct {
     const Self = @This();
 
     cell_grid: CellGrid,
@@ -475,7 +477,7 @@ const CoreState = struct {
     }
 
     /// caller guarantees that coord is valid
-    fn banTile(self: *Self, tile_index: TileIndex, coord: Coord) !void {
+    pub fn banTile(self: *Self, tile_index: TileIndex, coord: Coord) !void {
         const cell = self.cell_grid.cells.getPtr(coord);
         switch (cell.state) {
             .superposition => |*possible| {
@@ -499,7 +501,7 @@ const CoreState = struct {
     /// a loop with `chooseCellToCollapse()`, or use the convenience wrapper `run()`.
     /// Caller guarantees that `coord` is valid. Returns the index of the tile the cell
     /// is collapsed to.
-    pub fn collapseCell(self: *Self, coord: Coord) error{ OutOfMemory, Contradiction }!TileIndex {
+    pub fn collapseCell(self: *Self, coord: Coord) Error!TileIndex {
         const cell = self.cell_grid.cells.getPtr(coord);
         switch (cell.state) {
             .superposition => |possible| {
@@ -533,7 +535,7 @@ const CoreState = struct {
         }
     }
 
-    fn propagateInfo(self: *Self) error{ OutOfMemory, Contradiction }!void {
+    pub fn propagateInfo(self: *Self) Error!void {
         while (self.removals.popOrNull()) |removal| {
             for (directions) |direction| {
                 const neighbour_coord = neighbouringCoord(removal.coord, direction, self.cell_grid.cells.shape) orelse continue;
@@ -558,7 +560,7 @@ const CoreState = struct {
                         //            in std.math.order
                         if (Cell.hasNoPossibilities(neighbour.state.superposition)) {
                             // contradiction
-                            return error.Contradiction;
+                            return Error.Contradiction;
                         }
                         updateEntropyHeap(self, old_entropy, new_entropy, neighbour_coord);
                     }
@@ -568,7 +570,7 @@ const CoreState = struct {
         }
     }
 
-    fn run(self: *Self) error{ OutOfMemory, Contradiction }!void {
+    pub fn run(self: *Self) Error!void {
         while (self.chooseCellToCollapse()) |coord| {
             _ = try self.collapseCell(coord);
         }
@@ -691,7 +693,7 @@ pub fn tile(
                 attempt_oom = true;
                 continue;
             },
-            error.Contradiction => continue,
+            Error.Contradiction => continue,
         };
         break;
     } else {
@@ -708,7 +710,7 @@ pub fn tile(
 }
 
 test {
-    return error.SkipZigTest;
+    std.testing.refAllDecls(@This());
 }
 
 var bench_gpa = std.heap.GeneralPurposeAllocator(.{}){};
