@@ -650,10 +650,7 @@ pub fn generateSeededAlloc(
 /// `input` parameters, but more available memory, may return a different tiling.
 ///
 /// Returns `error.AttemptLimitReached` if no tilings are found within
-/// `limit` attempts and no attempts failed due to an out of memory error.
-///
-/// Returns `error.AttemptLimitReachedOOM` if no tililngs are found, but
-/// some attempts failed due to a lack of memory.
+/// `limit` attempts .
 pub fn tile(
     stack_allocator: Allocator,
     entropy_heap: EntropyHeap,
@@ -662,10 +659,8 @@ pub fn tile(
     seed_grid: CellGrid,
     input: GenInput,
     limit: usize,
-) !usize {
+) error{ OutOfMemory, AttemptLimitReached }!usize {
     var rng = std.rand.Xoshiro256{ .s = undefined }; //initialised in loop
-
-    var attempt_oom = false;
 
     var state = CoreState{
         .random = rng.random(),
@@ -700,15 +695,12 @@ pub fn tile(
         } else state.run();
 
         result catch |err| switch (err) {
-            error.OutOfMemory => {
-                attempt_oom = true;
-                continue;
-            },
+            Error.OutOfMemory => return error.OutOfMemory,
             Error.Contradiction => continue,
         };
         break;
     } else {
-        return if (attempt_oom) error.AttemptLimitReachedOOM else error.AttemptLimitReached;
+        return error.AttemptLimitReached;
     }
 
     {
