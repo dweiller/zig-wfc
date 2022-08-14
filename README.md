@@ -18,7 +18,11 @@ The most common situation is generating a 2D or 3D cubic tiling and this library
   - [x] generic core algorithm you can use with any set of (2D) tiles/edge constraints forming a rectangular grid
   - [x] generate tiles from image (overlapping mode)
   - [x] seeded generation
-  - [ ] tile count constraints (i.e. restrict how many times a tile is used)
+  - generation constraints
+    - [x] maximum tile count (i.e. max number of times a tile can be used)
+    - [ ] minimum tile count (i.e. min number of times a tile can be used)
+    - [ ] connectivity constraints (i.e. forces tiles to be part of the same region/path)
+    - [ ] distance constraints (distance between particular tiles and of paths)
   - [ ] tile symmetry groups
   - [ ] iterative pipeline
   - [ ] _n_-dimensional rectangular tilings
