@@ -100,7 +100,7 @@ pub const CellGrid = struct {
         allocator: Allocator,
         input: GenInput,
         seed_array: SeedGrid,
-    ) error{ OutOfMemory, SeedContradiction }!CellGrid {
+    ) Error!CellGrid {
         const shape = seed_array.shape;
 
         var cell_grid = try init(allocator, input.tile_count, shape);
@@ -169,7 +169,7 @@ pub const CellGrid = struct {
                         possible.unset(removal.tile_index);
                         if (possible.count() == 0) {
                             log.err("seed grid does not support a valid solution", .{});
-                            return error.SeedContradiction;
+                            return Error.Contradiction;
                         }
                     } else {
                         continue;
@@ -178,7 +178,7 @@ pub const CellGrid = struct {
                 .collapsed => |tile_index| {
                     if (tile_index == removal.tile_index) {
                         log.err("seed grid goes not support a valid solution", .{});
-                        return error.SeedContradiction;
+                        return Error.Contradiction;
                     }
                 },
             }
