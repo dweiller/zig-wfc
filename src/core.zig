@@ -2,6 +2,8 @@ const std = @import("std");
 const math = std.math;
 const Allocator = std.mem.Allocator;
 
+const constraint = @import("constraint.zig");
+
 const strided_arrays = @import("strided-arrays");
 const StridedArrayView = strided_arrays.StridedArrayView;
 
@@ -17,7 +19,7 @@ pub const TileGrid = StridedArrayView(TileIndex, 2);
 const Shape = TileGrid.Indices;
 pub const Coord = TileGrid.Indices;
 
-pub const Error = error { OutOfMemory, Contradiction };
+pub const Error = error{ OutOfMemory, Contradiction };
 
 pub const SeedGrid = StridedArrayView(Cell.State, 2);
 
@@ -246,6 +248,7 @@ pub const GenInput = struct {
     tile_count: TileIndex,
     adjacency_rules: Adjacencies,
     weights: []Weight,
+    constraints: ?[]constraint.Count = null,
 
     pub fn init(allocator: Allocator, seed: usize, tile_count: TileIndex) !GenInput {
         return GenInput{
@@ -256,6 +259,7 @@ pub const GenInput = struct {
         };
     }
 
+    /// Does not free `self.constraints` if non-null.
     pub fn deinit(self: GenInput, allocator: Allocator) void {
         self.adjacency_rules.deinit(allocator);
         allocator.free(self.weights);
@@ -688,7 +692,14 @@ pub fn tile(
         state.removals.clearRetainingCapacity();
         state.entropy_heap.initEntropies(state.cell_grid, state.weights);
 
-        state.run() catch |err| switch (err) {
+        const result = if (input.constraints) |constraints| result: {
+            for (constraints) |*c| {
+                c.current = 0;
+            }
+            break :result constraint.run(&state, constraints);
+        } else state.run();
+
+        result catch |err| switch (err) {
             error.OutOfMemory => {
                 attempt_oom = true;
                 continue;
