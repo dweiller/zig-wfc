@@ -156,11 +156,16 @@ pub const CellGrid = struct {
 
         var iter2 = cells.iterate();
         while (iter2.nextWithCoord()) |entry| {
-            for (entry.val.enablers) |tile_enabler, i| {
-                const tile_index = @intCast(TileIndex, i);
-                if (tile_enabler.hasZeroCount()) {
-                    try removals.append(.{ .tile_index = tile_index, .coord = entry.coord });
-                }
+            switch (entry.val.state) {
+                .collapsed => continue,
+                .superposition => {
+                    for (entry.val.enablers) |tile_enabler, i| {
+                        const tile_index = @intCast(TileIndex, i);
+                        if (tile_enabler.hasZeroCount()) {
+                            try removals.append(.{ .tile_index = tile_index, .coord = entry.coord });
+                        }
+                    }
+                },
             }
         }
 
