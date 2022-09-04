@@ -593,14 +593,26 @@ pub fn generateAlloc(
     output_shape: Shape,
     limit: usize,
 ) !TileGrid {
-    var seed_grid = try CellGrid.initFull(data_allocator, input, output_shape);
-    defer seed_grid.deinit(data_allocator);
+    var seed_grid = try initSeedGrid(data_allocator, output_shape);
+    defer data_allocator.free(seed_grid.items);
     return generateSeededAlloc(data_allocator, stack_allocator, seed_grid, input, limit);
+}
+
+pub fn generateSeededAlloc(
+    data_allocator: Allocator,
+    stack_allocator: Allocator,
+    seed_grid: SeedGrid,
+    input: GenInput,
+    limit: usize,
+) !TileGrid {
+    var cell_grid = try CellGrid.initSeeded(data_allocator, input, seed_grid);
+    defer cell_grid.deinit(data_allocator);
+    return generateSeededCellAlloc(data_allocator, stack_allocator, cell_grid, input, limit);
 }
 
 /// Caller is reponsible for freeing the result, which is
 /// owned by `data_allocator`.
-pub fn generateSeededAlloc(
+pub fn generateSeededCellAlloc(
     data_allocator: Allocator,
     stack_allocator: Allocator,
     seed_grid: CellGrid,
