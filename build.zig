@@ -70,11 +70,11 @@ fn rootDir() []const u8 {
 pub fn getPackage() std.build.Pkg {
     const wfc = std.build.Pkg{
         .name = "wfc",
-        .source = std.build.FileSource{ .path = rootDir() ++ "/src/wfc.zig" },
+        .source = std.build.FileSource{ .path = comptime rootDir() ++ "/src/wfc.zig" },
         .dependencies = &.{
             .{
                 .name = "strided-arrays",
-                .source = std.build.FileSource{ .path = rootDir() ++ "/vendor/zig-strided-arrays/src/strided_array.zig" },
+                .source = std.build.FileSource{ .path = comptime rootDir() ++ "/vendor/zig-strided-arrays/src/strided_array.zig" },
             },
         },
     };
