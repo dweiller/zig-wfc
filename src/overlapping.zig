@@ -154,7 +154,7 @@ pub fn overlappingTiles(allocator: Allocator, tile_grid: TileGrid, size: u32) !T
         .adjacencies = adjacencies,
         .map = map,
         .weight = weight,
-        .tiles = extracted_tiles.toOwnedSlice(),
+        .tiles = try extracted_tiles.toOwnedSlice(),
     };
 }
 
