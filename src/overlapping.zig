@@ -158,6 +158,10 @@ pub fn overlappingTiles(allocator: Allocator, tile_grid: TileGrid, size: u32) !T
     };
 }
 
+test {
+    std.testing.refAllDecls(@This());
+}
+
 test "extractTileAt" {
     const allocator = std.testing.allocator;
     const tile_size: usize = 3;
