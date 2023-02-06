@@ -1,9 +1,3 @@
-[submodule "vendor/zig-args"]
-	path = vendor/zig-args
-	url = https://github.com/MasterQ32/zig-args.git
 [submodule "vendor/zubench"]
 	path = vendor/zubench
 	url = https://github.com/dweiller/zubench.git
-[submodule "vendor/zig-strided-arrays"]
-	path = vendor/zig-strided-arrays
-	url = https://github.com/dweiller/zig-strided-arrays.git

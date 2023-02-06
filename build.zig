@@ -12,21 +12,22 @@ pub fn build(b: *std.Build) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardOptimizeOption(.{});
 
-    const zig_args = b.createModule(.{
-        .source_file = std.build.FileSource{ .path = "vendor/zig-args/args.zig" },
-    });
-
     const zubench = b.createModule(.{
         .source_file = std.build.FileSource{ .path = "vendor/zubench/src/bench.zig" },
     });
 
-    const strided_arrays = b.createModule(.{
-        .source_file = std.build.FileSource{ .path = "vendor/zig-strided-arrays/src/strided_array.zig" },
+    const zig_args_pkg = b.dependency("zig-args", .{});
+    const strided_arrays_pkg = b.dependency("strided-arrays", .{});
+
+    const zig_args = zig_args_pkg.module("args");
+    const strided_arrays = strided_arrays_pkg.module("strided-arrays");
+    const strided_arrays_dep = std.Build.ModuleDependency{ .name = "strided-arrays", .module = strided_arrays, };
+
+    b.addModule(.{
+        .name = "wfc",
+        .source_file = .{ .path = "src/wfc.zig" },
+        .dependencies = &.{.{ .name = "strided-arrays", .module = strided_arrays }},
     });
-    const strided_arrays_dep = std.Build.ModuleDependency{
-        .name = "strided-arrays",
-        .module = strided_arrays,
-    };
 
     b.addModule(.{
         .name = "wfc",
@@ -69,10 +70,7 @@ pub fn build(b: *std.Build) void {
 
     inline for (.{ .ReleaseSafe, .ReleaseFast, .ReleaseSmall }) |b_mode| {
         const bench_exe = addBench(b, "src/core.zig", b_mode, zubench, &.{strided_arrays_dep});
-        bench_step.dependOn(&bench_exe.run().step);
+        const cmd = b.addRunArtifact(bench_exe);
+        bench_step.dependOn(&cmd.step);
     }
-}
-
-fn rootDir() []const u8 {
-    return std.fs.path.dirname(@src().file) orelse ".";
 }
