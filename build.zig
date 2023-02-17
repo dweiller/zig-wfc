@@ -12,22 +12,27 @@ pub fn build(b: *std.Build) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardOptimizeOption(.{});
 
-    const pkgs = struct {
-        const zig_args = std.build.Pkg{
-            .name = "zig-args",
-            .source = std.build.FileSource{ .path = "vendor/zig-args/args.zig" },
-        };
+    const zig_args = b.createModule(.{
+        .source_file = std.build.FileSource{ .path = "vendor/zig-args/args.zig" },
+    });
 
-        const zubench = std.build.Pkg{
-            .name = "zubench",
-            .source = std.build.FileSource{ .path = "vendor/zubench/src/bench.zig" },
-        };
+    const zubench = b.createModule(.{
+        .source_file = std.build.FileSource{ .path = "vendor/zubench/src/bench.zig" },
+    });
 
-        const strided_arrays = std.build.Pkg{
-            .name = "strided-arrays",
-            .source = std.build.FileSource{ .path = "vendor/zig-strided-arrays/src/strided_array.zig" },
-        };
+    const strided_arrays = b.createModule(.{
+        .source_file = std.build.FileSource{ .path = "vendor/zig-strided-arrays/src/strided_array.zig" },
+    });
+    const strided_arrays_dep = std.Build.ModuleDependency{
+        .name = "strided-arrays",
+        .module = strided_arrays,
     };
+
+    b.addModule(.{
+        .name = "wfc",
+        .source_file = .{ .path = "src/wfc.zig" },
+        .dependencies = &.{strided_arrays_dep},
+    });
 
     const exe = b.addExecutable(.{
         .name = "zig-wfc",
@@ -35,11 +40,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = mode,
     });
-    exe.addPackage(pkgs.zig_args);
-    exe.addPackage(pkgs.strided_arrays);
+    exe.addModule("zig-args", zig_args);
+    exe.addModule(strided_arrays_dep.name, strided_arrays_dep.module);
     exe.install();
 
-    const run_cmd = exe.run();
+    const run_cmd = b.addRunArtifact(exe);
     run_cmd.expected_exit_code = null;
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
@@ -54,8 +59,8 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = mode,
     });
-    wfc_tests.addPackage(pkgs.zubench);
-    wfc_tests.addPackage(pkgs.strided_arrays);
+    wfc_tests.addModule("zubench", zubench);
+    wfc_tests.addModule(strided_arrays_dep.name,strided_arrays_dep.module);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&wfc_tests.step);
@@ -63,25 +68,11 @@ pub fn build(b: *std.Build) void {
     const bench_step = b.step("bench", "Run the benchmarks");
 
     inline for (.{ .ReleaseSafe, .ReleaseFast, .ReleaseSmall }) |b_mode| {
-        const bench_exe = addBench(b, "src/core.zig", b_mode, &.{pkgs.strided_arrays});
+        const bench_exe = addBench(b, "src/core.zig", b_mode, zubench, &.{strided_arrays_dep});
         bench_step.dependOn(&bench_exe.run().step);
     }
 }
 
 fn rootDir() []const u8 {
     return std.fs.path.dirname(@src().file) orelse ".";
-}
-
-pub fn getPackage() std.build.Pkg {
-    const wfc = std.build.Pkg{
-        .name = "wfc",
-        .source = std.build.FileSource{ .path = comptime rootDir() ++ "/src/wfc.zig" },
-        .dependencies = &.{
-            .{
-                .name = "strided-arrays",
-                .source = std.build.FileSource{ .path = comptime rootDir() ++ "/vendor/zig-strided-arrays/src/strided_array.zig" },
-            },
-        },
-    };
-    return wfc;
 }
