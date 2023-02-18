@@ -1,5 +1,5 @@
 const std = @import("std");
-const addBench = @import("vendor/zubench/build.zig").addBench;
+const addBench = @import("zubench/build.zig").addBench;
 
 pub fn build(b: *std.Build) void {
     // Standard target options allows the person running `zig build` to choose
@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) void {
     const mode = b.standardOptimizeOption(.{});
 
     const zubench = b.createModule(.{
-        .source_file = std.build.FileSource{ .path = "vendor/zubench/src/bench.zig" },
+        .source_file = std.build.FileSource{ .path = "zubench/src/bench.zig" },
     });
 
     const zig_args_pkg = b.dependency("zig-args", .{});

@@ -1,3 +1,0 @@
-[submodule "vendor/zubench"]
-	path = vendor/zubench
-	url = https://github.com/dweiller/zubench.git
