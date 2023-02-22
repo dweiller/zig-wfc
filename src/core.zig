@@ -69,8 +69,7 @@ pub const CellGrid = struct {
 
         var initial_state = Cell.State{ .superposition = TileSet.initEmpty() };
         {
-            var i: usize = 0;
-            while (i < input.tile_count) : (i += 1) {
+            for (0..input.tile_count) |i| {
                 initial_state.superposition.set(i);
             }
         }
@@ -83,7 +82,7 @@ pub const CellGrid = struct {
         // TODO: calculate enablers once, should be the same for all cells
         var iter2 = cell_grid.cells.iterate();
         while (iter2.next()) |cell| {
-            for (cell.enablers) |*tile_enabler, i| {
+            for (cell.enablers, 0..) |*tile_enabler, i| {
                 const tile_index = @intCast(TileIndex, i);
                 for (directions) |direction| {
                     var count: TileIndex = 0;
@@ -122,7 +121,7 @@ pub const CellGrid = struct {
         {
             var iter = cells.iterate();
             while (iter.nextWithCoord()) |entry| {
-                for (entry.val.enablers) |*tile_enabler, i| {
+                for (entry.val.enablers, 0..) |*tile_enabler, i| {
                     const tile_index = @intCast(TileIndex, i);
                     for (directions) |direction| {
                         if (neighbouringCell(cells, entry.coord, direction, cells.shape)) |neighbour| {
@@ -159,7 +158,7 @@ pub const CellGrid = struct {
             switch (entry.val.state) {
                 .collapsed => continue,
                 .superposition => {
-                    for (entry.val.enablers) |tile_enabler, i| {
+                    for (entry.val.enablers, 0..) |tile_enabler, i| {
                         const tile_index = @intCast(TileIndex, i);
                         if (tile_enabler.hasZeroCount()) {
                             try removals.append(.{ .tile_index = tile_index, .coord = entry.coord });

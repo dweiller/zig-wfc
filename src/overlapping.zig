@@ -89,8 +89,8 @@ fn tilesCompatible(tile: TileGrid, other: TileGrid, direction: core.Direction) b
 }
 
 fn buildAdjacency(adjacencies: Adjacencies, tiles: []TileGrid) void {
-    for (tiles) |first, first_index| {
-        for (tiles) |second, second_index| {
+    for (tiles, 0..) |first, first_index| {
+        for (tiles, 0..) |second, second_index| {
             for (core.directions) |direction| {
                 if (tilesCompatible(first, second, direction)) {
                     adjacencies.set(@intCast(TileIndex, first_index), direction, @intCast(TileIndex, second_index));
@@ -174,7 +174,7 @@ test "extractTileAt" {
 
     const grid = TileGrid.ofSlicePacked(grid_buf, grid_shape) catch unreachable;
 
-    for (grid.items) |*tile_index, i| {
+    for (grid.items, 0..) |*tile_index, i| {
         tile_index.* = @intCast(TileIndex, i);
     }
 

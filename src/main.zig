@@ -106,7 +106,7 @@ fn imageMode(
     const colour_map = try allocator.alloc(u8, tile_set.count);
     defer allocator.free(colour_map);
 
-    for (colour_map) |_, i| {
+    for (colour_map, 0..) |_, i| {
         colour_map[i] = image.raster[tile_set.map[i]];
     }
 
@@ -122,7 +122,7 @@ fn imageMode(
         defer allocator.free(buf);
 
         const ext_idx = std.mem.indexOfScalar(u8, out_filename, '.');
-        for (tile_set.tiles) |tile, n| {
+        for (tile_set.tiles, 0..) |tile, n| {
             const tile_image = pnm.PNM{
                 .header = .{
                     .type = .PGM,
@@ -213,8 +213,7 @@ fn printGrid(tile_grid: wfc.TileGrid, tile_map: []const []const u8, rows: usize,
     const stdout = std.io.getStdOut().writer();
     {
         try stdout.print("┌", .{});
-        var i: usize = 0;
-        while (i < cols) : (i += 1) {
+        for (0..cols) |_| {
             try stdout.print("─", .{});
         }
         try stdout.print("┐\n", .{});
@@ -227,8 +226,7 @@ fn printGrid(tile_grid: wfc.TileGrid, tile_map: []const []const u8, rows: usize,
         }
     }
     try stdout.print("│\n", .{});
-    var row: usize = 1;
-    while (row < rows) : (row += 1) {
+    for (0..rows) |row| {
         try stdout.print("│", .{});
         const row_start = row * cols;
         var iter = tile_grid.iterateRange(row_start, row_start + cols);
@@ -239,8 +237,7 @@ fn printGrid(tile_grid: wfc.TileGrid, tile_map: []const []const u8, rows: usize,
     }
     {
         try stdout.print("└", .{});
-        var i: usize = 0;
-        while (i < cols) : (i += 1) {
+        for (0..cols) |_| {
             try stdout.print("─", .{});
         }
         try stdout.print("┘\n", .{});
