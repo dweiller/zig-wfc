@@ -10,5 +10,9 @@
             .url = "https://github.com/MasterQ32/zig-args/archive/c84f9709405b31ef3e72ab26b20ba3c37826f8ec.tar.gz",
             .hash = "1220e4ae687b355b164d986c6400eef6cfc2b1020718eaa72914865d344b2f192141",
         },
+        .zubench = .{
+            .url = "https://github.com/dweiller/zubench/archive/271cefce11b4503c33bb57c03c3af6785137f684.tar.gz",
+            .hash = "1220b7e0bb2c860a7eec58222aa379fb621713a6c18811d4cdcc69523e3a4233849d",
+        }
     }
 }

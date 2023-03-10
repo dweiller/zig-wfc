@@ -1,5 +1,5 @@
 const std = @import("std");
-const addBench = @import("zubench/build.zig").addBench;
+const addBench = @import("zubench").addBench;
 
 pub fn build(b: *std.Build) void {
     // Standard target options allows the person running `zig build` to choose
