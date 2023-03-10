@@ -12,9 +12,7 @@ pub fn build(b: *std.Build) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardOptimizeOption(.{});
 
-    const zubench = b.createModule(.{
-        .source_file = std.build.FileSource{ .path = "zubench/src/bench.zig" },
-    });
+    const zubench = b.dependency("zubench", .{}).module("zubench");
 
     const zig_args_pkg = b.dependency("zig-args", .{});
     const strided_arrays_pkg = b.dependency("strided-arrays", .{});
