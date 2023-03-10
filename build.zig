@@ -21,16 +21,12 @@ pub fn build(b: *std.Build) void {
 
     const zig_args = zig_args_pkg.module("args");
     const strided_arrays = strided_arrays_pkg.module("strided-arrays");
-    const strided_arrays_dep = std.Build.ModuleDependency{ .name = "strided-arrays", .module = strided_arrays, };
+    const strided_arrays_dep = std.Build.ModuleDependency{
+        .name = "strided-arrays",
+        .module = strided_arrays,
+    };
 
-    b.addModule(.{
-        .name = "wfc",
-        .source_file = .{ .path = "src/wfc.zig" },
-        .dependencies = &.{.{ .name = "strided-arrays", .module = strided_arrays }},
-    });
-
-    b.addModule(.{
-        .name = "wfc",
+    _ = b.addModule("wfc", .{
         .source_file = .{ .path = "src/wfc.zig" },
         .dependencies = &.{strided_arrays_dep},
     });
@@ -61,7 +57,7 @@ pub fn build(b: *std.Build) void {
         .optimize = mode,
     });
     wfc_tests.addModule("zubench", zubench);
-    wfc_tests.addModule(strided_arrays_dep.name,strided_arrays_dep.module);
+    wfc_tests.addModule(strided_arrays_dep.name, strided_arrays_dep.module);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&wfc_tests.step);
