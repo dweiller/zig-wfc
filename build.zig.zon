@@ -11,8 +11,8 @@
             .hash = "1220e4ae687b355b164d986c6400eef6cfc2b1020718eaa72914865d344b2f192141",
         },
         .zubench = .{
-            .url = "https://github.com/dweiller/zubench/archive/271cefce11b4503c33bb57c03c3af6785137f684.tar.gz",
-            .hash = "1220b7e0bb2c860a7eec58222aa379fb621713a6c18811d4cdcc69523e3a4233849d",
+            .url = "https://github.com/dweiller/zubench/archive/a924955ee29d0af6854cf6abe4664f24e4d6f532.tar.gz",
+            .hash = "122081705a6b56f73b220b03b4c086f0456c06534f751d57ee2557c2b0b621999ee3",
         }
     }
 }
