@@ -3,48 +3,79 @@ const std = @import("std");
 const wfc = @import("wfc.zig");
 const pnm = @import("pnm.zig");
 
-const argsParser = @import("zig-args");
+const Mode = union(enum) {
+    @"test",
+    image: ImageOptions,
+};
 
-const arg_spec = struct {
+const GenericOptions = struct {
     seed: usize = 0,
     size: u32 = 64,
     help: bool = false,
-    pub const shorthands = .{
-        .s = "seed",
-        .o = "size",
-        .h = "help",
-    };
 };
 
-const ImOpts = struct {
+const ImageOptions = struct {
     @"filter-size": u32 = 3,
     @"output-tiles": ?[]const u8 = null,
-    pub const shorthands = .{
-        .f = "filter-size",
-        .t = "output-tiles",
-    };
 };
 
-const verb_spec = union(enum) {
-    @"test": struct {},
-    image: ImOpts,
+const Options = struct {
+    options: GenericOptions,
+    mode: ?Mode,
+    positionals: []const []const u8,
 };
+
+fn parseCli(allocator: std.mem.Allocator) !Options {
+    var args = try std.process.argsWithAllocator(allocator);
+    std.debug.assert(args.skip());
+
+    var options = GenericOptions{};
+    var mode: ?Mode = null;
+
+    var positionals = std.ArrayList([]const u8).init(allocator);
+    defer positionals.deinit();
+
+    while (args.next()) |arg| {
+        if (std.mem.eql(u8, "--seed", arg) or std.mem.eql(u8, "-s", arg)) {
+            options.seed = try std.fmt.parseInt(usize, args.next() orelse missingArg("seed"), 10);
+        } else if (std.mem.eql(u8, "--size", arg) or std.mem.eql(u8, "-o", arg)) {
+            options.size = try std.fmt.parseInt(u32, args.next() orelse missingArg("size"), 10);
+        } else if (std.mem.eql(u8, "--help", arg) or std.mem.eql(u8, "-h", arg)) {
+            options.help = true;
+        } else if (std.mem.eql(u8, "image", arg)) {
+            if (mode != null) unexpectedArg(arg);
+            mode = .{ .image = .{} };
+        } else if (std.mem.eql(u8, "test", arg)) {
+            if (mode != null) unexpectedArg(arg);
+            mode = .@"test";
+        } else if (mode != null and mode.? == .image and std.mem.eql(u8, "--output-tiles", arg)) {
+            const owned_arg = try allocator.dupe(u8, args.next() orelse missingArg("output-tiles"));
+            mode.?.image.@"output-tiles" = owned_arg;
+        } else if (mode != null and mode.? == .image and std.mem.eql(u8, "--filter-size", arg)) {
+            const number_arg = args.next() orelse missingArg("filter-size");
+            mode.?.image.@"filter-size" = try std.fmt.parseInt(u32, number_arg, 10,);
+        } else {
+            try positionals.append(try allocator.dupe(u8, arg));
+        }
+    }
+
+    const result = Options{
+        .options = options,
+        .mode = mode,
+        .positionals = try positionals.toOwnedSlice(),
+    };
+    return result;
+}
 
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    var options = argsParser.parseWithVerbForCurrentProcess(
-        arg_spec,
-        verb_spec,
-        allocator,
-        .print,
-    ) catch printUsageAndExit();
-    defer options.deinit();
+    const options = try parseCli(allocator);
 
-    if (options.verb) |verb| {
-        switch (verb) {
+    if (options.mode) |m| {
+        switch (m) {
             .@"test" => try testMode(allocator, options.options),
             .image => |opts| {
                 if (options.positionals.len != 2) {
@@ -74,8 +105,8 @@ const Input = struct {
 
 fn imageMode(
     allocator: std.mem.Allocator,
-    options: arg_spec,
-    im_opts: ImOpts,
+    options: GenericOptions,
+    im_opts: ImageOptions,
     in_filename: []const u8,
     out_filename: []const u8,
 ) !void {
@@ -155,7 +186,7 @@ fn imageMode(
     }
 }
 
-fn testMode(allocator: std.mem.Allocator, options: arg_spec) !void {
+fn testMode(allocator: std.mem.Allocator, options: GenericOptions) !void {
     const tile_count = 4;
     const tile_map = [tile_count][]const u8{ " ", "┃", "━", "╋" };
     var adj_0 = [1]wfc.TileSet{wfc.TileSet.initEmpty()} ** 4;
@@ -248,15 +279,15 @@ fn printUsage() void {
     std.debug.print(
         \\Usage:
         \\    wfcgen test
-        \\    wfcgen image [--filter-size=NUM] [--output-tiles=DIR] infile outfile
+        \\    wfcgen image [--filter-size NUM] [--output-tiles DIR] infile outfile
         \\
         \\General options:
-        \\    -o, --size=[NUM]          the size of output (defaults to 64)
-        \\    -s, --seed=[NUM]          the initial seed to use for generation (defaults to 0)
+        \\    -o, --size [NUM]          the size of output (defaults to 64)
+        \\    -s, --seed [NUM]          the initial seed to use for generation (defaults to 0)
         \\
         \\Image options
-        \\    --output-tiles=[DIR]      set to a directory to output extracted tiles
-        \\    --filter-size=[NUM]       set the subtile size
+        \\    --output-tiles [DIR]      set to a directory to output extracted tiles
+        \\    --filter-size [NUM]       set the subtile size
         \\
     , .{});
 }
@@ -264,4 +295,14 @@ fn printUsage() void {
 fn printUsageAndExit() noreturn {
     printUsage();
     std.process.exit(1);
+}
+
+fn missingArg(param: []const u8) noreturn {
+    std.debug.print("missing expected {s} parameter", .{param});
+    printUsageAndExit();
+}
+
+fn unexpectedArg(param: []const u8) noreturn {
+    std.debug.print("unexpected paramter: \"{s}\"", .{param});
+    printUsageAndExit();
 }

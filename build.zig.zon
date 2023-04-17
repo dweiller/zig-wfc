@@ -3,16 +3,12 @@
     .version = "0.0.0",
     .dependencies = .{
         .@"strided-arrays" = .{
-            .url = "https://github.com/dweiller/zig-strided-arrays/archive/58a5b31cfd7ed0aaaf19e1210e4c6e966438840d.tar.gz",
-            .hash = "1220f2240a3e40c870556d2e5da4a041edf9a6b76f94d8940f5f7b71081c178f1699",
-        },
-        .@"zig-args" = .{
-            .url = "https://github.com/MasterQ32/zig-args/archive/c84f9709405b31ef3e72ab26b20ba3c37826f8ec.tar.gz",
-            .hash = "1220e4ae687b355b164d986c6400eef6cfc2b1020718eaa72914865d344b2f192141",
+            .url = "https://github.com/dweiller/zig-strided-arrays/archive/499f3586434ab39c8a044ccc91e079048610b87b.tar.gz",
+            .hash = "1220385eb2385bd678c78dc5ef1813b5541afad61a755455690f78bd1359b3738660",
         },
         .zubench = .{
-            .url = "https://github.com/dweiller/zubench/archive/a924955ee29d0af6854cf6abe4664f24e4d6f532.tar.gz",
-            .hash = "122081705a6b56f73b220b03b4c086f0456c06534f751d57ee2557c2b0b621999ee3",
+            .url = "https://github.com/dweiller/zubench/archive/ca901117ff7a737f089dd94852854ee643d528d6.tar.gz",
+            .hash = "12204acadea42c5a7995c22e38533d02b887ffa631b3a2add8bae4f0df14bc3f012c",
         }
     }
 }

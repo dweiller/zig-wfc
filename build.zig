@@ -13,11 +13,8 @@ pub fn build(b: *std.Build) void {
     const mode = b.standardOptimizeOption(.{});
 
     const zubench = b.dependency("zubench", .{}).module("zubench");
-
-    const zig_args_pkg = b.dependency("zig-args", .{});
     const strided_arrays_pkg = b.dependency("strided-arrays", .{});
 
-    const zig_args = zig_args_pkg.module("args");
     const strided_arrays = strided_arrays_pkg.module("strided-arrays");
     const strided_arrays_dep = std.Build.ModuleDependency{
         .name = "strided-arrays",
@@ -35,9 +32,8 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = mode,
     });
-    exe.addModule("zig-args", zig_args);
     exe.addModule(strided_arrays_dep.name, strided_arrays_dep.module);
-    exe.install();
+    b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
