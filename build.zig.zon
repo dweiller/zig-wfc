@@ -3,12 +3,12 @@
     .version = "0.0.0",
     .dependencies = .{
         .@"strided-arrays" = .{
-            .url = "https://github.com/dweiller/zig-strided-arrays/archive/499f3586434ab39c8a044ccc91e079048610b87b.tar.gz",
-            .hash = "1220385eb2385bd678c78dc5ef1813b5541afad61a755455690f78bd1359b3738660",
+            .url = "https://github.com/dweiller/zig-strided-arrays/archive/d47d2b50435549ce77b55e86be1fd28d0154b453.tar.gz",
+            .hash = "122047afb111ea7acfabe1d3d135c1f78d3793ca0adcb036b021e9a1a0ca052f98c2",
         },
         .zubench = .{
-            .url = "https://github.com/dweiller/zubench/archive/ca901117ff7a737f089dd94852854ee643d528d6.tar.gz",
-            .hash = "12204acadea42c5a7995c22e38533d02b887ffa631b3a2add8bae4f0df14bc3f012c",
-        }
-    }
+            .url = "https://github.com/dweiller/zubench/archive/54964ca8e3f5969bdb3f049021db20f15f68be1c.tar.gz",
+            .hash = "12201c65565cb2b5bf4140f7d8de7b7fabc7c8643954d46cd4382c79dec205c71b6f",
+        },
+    },
 }

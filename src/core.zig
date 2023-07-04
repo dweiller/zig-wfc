@@ -83,7 +83,7 @@ pub const CellGrid = struct {
         var iter2 = cell_grid.cells.iterate();
         while (iter2.next()) |cell| {
             for (cell.enablers, 0..) |*tile_enabler, i| {
-                const tile_index = @intCast(TileIndex, i);
+                const tile_index: TileIndex = @intCast(i);
                 for (directions) |direction| {
                     var count: TileIndex = 0;
                     var adj_iter = input.adjacency_rules.get(tile_index, direction).iterator(.{});
@@ -122,7 +122,7 @@ pub const CellGrid = struct {
             var iter = cells.iterate();
             while (iter.nextWithCoord()) |entry| {
                 for (entry.val.enablers, 0..) |*tile_enabler, i| {
-                    const tile_index = @intCast(TileIndex, i);
+                    const tile_index: TileIndex = @intCast(i);
                     for (directions) |direction| {
                         if (neighbouringCell(cells, entry.coord, direction, cells.shape)) |neighbour| {
                             var count: TileIndex = 0;
@@ -159,7 +159,7 @@ pub const CellGrid = struct {
                 .collapsed => continue,
                 .superposition => {
                     for (entry.val.enablers, 0..) |tile_enabler, i| {
-                        const tile_index = @intCast(TileIndex, i);
+                        const tile_index: TileIndex = @intCast(i);
                         if (tile_enabler.hasZeroCount()) {
                             try removals.append(.{ .tile_index = tile_index, .coord = entry.coord });
                         }
@@ -195,7 +195,7 @@ pub const CellGrid = struct {
 
                 var iter = adjacency.get(removal.tile_index, direction).iterator(.{});
                 while (iter.next()) |i| {
-                    const compatible_tile_idx = @intCast(TileIndex, i);
+                    const compatible_tile_idx: TileIndex = @intCast(i);
                     const enabler_counts = &neighbour.enablers[compatible_tile_idx];
                     if (neighbour.state == .superposition and enabler_counts.get(opposite_direction) == 1) {
                         // we're decrementing to zero, so we need to do removal and
@@ -239,11 +239,11 @@ pub const Adjacencies = struct {
     }
 
     pub inline fn get(self: Self, tile_index: TileIndex, direction: Direction) TileSet {
-        return self.allowed_edges[tile_index][@enumToInt(direction)];
+        return self.allowed_edges[tile_index][@intFromEnum(direction)];
     }
 
     pub inline fn set(self: Self, tile_index: TileIndex, direction: Direction, neighbour: TileIndex) void {
-        self.allowed_edges[tile_index][@enumToInt(direction)].set(neighbour);
+        self.allowed_edges[tile_index][@intFromEnum(direction)].set(neighbour);
     }
 };
 
@@ -306,15 +306,15 @@ const EnablerCounts = struct {
     counts: [directions.len]TileIndex,
 
     pub inline fn get(self: EnablerCounts, direction: Direction) TileIndex {
-        return self.counts[@enumToInt(direction)];
+        return self.counts[@intFromEnum(direction)];
     }
 
     pub inline fn set(self: *EnablerCounts, direction: Direction, count: TileIndex) void {
-        self.counts[@enumToInt(direction)] = count;
+        self.counts[@intFromEnum(direction)] = count;
     }
 
     pub inline fn decr(self: *EnablerCounts, direction: Direction) void {
-        self.counts[@enumToInt(direction)] -|= 1;
+        self.counts[@intFromEnum(direction)] -|= 1;
     }
 
     fn hasZeroCount(self: EnablerCounts) bool {
@@ -352,11 +352,11 @@ const Cell = struct {
 
     //TODO(performance): cache current entropy and subtract when removing possibilities
     fn entropy(possible: TileSet, weights: []const Weight) f32 {
-        const total_weight = @intToFloat(f32, possibleWeight(possible, weights));
+        const total_weight: f32 = @floatFromInt(possibleWeight(possible, weights));
         var w_log_w_sum: f32 = 0;
         var iter = possible.iterator(.{});
         while (iter.next()) |i| {
-            const w = @intToFloat(f32, weights[i]);
+            const w: f32 = @floatFromInt(weights[i]);
             w_log_w_sum += w * math.log2(w);
         }
         return math.log2(total_weight) - w_log_w_sum / total_weight;
@@ -473,7 +473,7 @@ pub const CoreState = struct {
         var remaining = random.uintLessThan(usize, Cell.possibleWeight(possible, weights));
         var iter = possible.iterator(.{});
         while (iter.next()) |i| {
-            const tile_index = @intCast(TileIndex, i);
+            const tile_index: TileIndex = @intCast(i);
             const weight = weights[tile_index];
             if (remaining >= weight)
                 remaining -= weight
@@ -517,7 +517,7 @@ pub const CoreState = struct {
                 var iter = possible.iterator(.{});
                 while (iter.next()) |i| {
                     if (i != tile_index) {
-                        try banTile(self, @intCast(TileIndex, i), coord);
+                        try banTile(self, @intCast(i), coord);
                     }
                 }
                 cell.state = Cell.State{ .collapsed = tile_index };
@@ -552,7 +552,7 @@ pub const CoreState = struct {
 
                 var iter = self.adjacency.get(removal.tile_index, direction).iterator(.{});
                 while (iter.next()) |i| {
-                    const compatible_tile_idx = @intCast(TileIndex, i);
+                    const compatible_tile_idx: TileIndex = @intCast(i);
                     const enabler_counts = &neighbour.enablers[compatible_tile_idx];
                     if (neighbour.state == .superposition and enabler_counts.get(opposite_direction) == 1) {
                         // we're decrementing to zero, so we need to do removal and

@@ -53,7 +53,11 @@ fn parseCli(allocator: std.mem.Allocator) !Options {
             mode.?.image.@"output-tiles" = owned_arg;
         } else if (mode != null and mode.? == .image and std.mem.eql(u8, "--filter-size", arg)) {
             const number_arg = args.next() orelse missingArg("filter-size");
-            mode.?.image.@"filter-size" = try std.fmt.parseInt(u32, number_arg, 10,);
+            mode.?.image.@"filter-size" = try std.fmt.parseInt(
+                u32,
+                number_arg,
+                10,
+            );
         } else {
             try positionals.append(try allocator.dupe(u8, arg));
         }

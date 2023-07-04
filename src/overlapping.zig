@@ -93,7 +93,7 @@ fn buildAdjacency(adjacencies: Adjacencies, tiles: []TileGrid) void {
         for (tiles, 0..) |second, second_index| {
             for (core.directions) |direction| {
                 if (tilesCompatible(first, second, direction)) {
-                    adjacencies.set(@intCast(TileIndex, first_index), direction, @intCast(TileIndex, second_index));
+                    adjacencies.set(@intCast(first_index), direction, @intCast(second_index));
                 }
             }
         }
@@ -125,7 +125,7 @@ pub fn overlappingTiles(allocator: Allocator, tile_grid: TileGrid, size: u32) !T
                 gop.value_ptr.* = Tile{
                     .index = tile_index,
                     .count = 1,
-                    .map_index = @intCast(TileIndex, item.index),
+                    .map_index = @intCast(item.index),
                 };
                 try extracted_tiles.append(TileGrid.ofSlicePacked(extract_buf, .{ size, size }) catch unreachable);
                 tile_index += 1;
@@ -175,7 +175,7 @@ test "extractTileAt" {
     const grid = TileGrid.ofSlicePacked(grid_buf, grid_shape) catch unreachable;
 
     for (grid.items, 0..) |*tile_index, i| {
-        tile_index.* = @intCast(TileIndex, i);
+        tile_index.* = @intCast(i);
     }
 
     const tile_el_count = tile_size * tile_size;
