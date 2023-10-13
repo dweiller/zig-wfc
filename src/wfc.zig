@@ -5,6 +5,6 @@ pub const constraint = @import("constraint.zig");
 
 pub usingnamespace @import("core.zig");
 
-test {
+comptime {
     std.testing.refAllDecls(@This());
 }
