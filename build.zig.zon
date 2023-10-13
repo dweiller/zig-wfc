@@ -1,6 +1,7 @@
 .{
     .name = "zig-wfc",
     .version = "0.0.0",
+    .paths = .{ "LICENSE", "build.zig", "build.zig.zon", "src" },
     .dependencies = .{
         .@"strided-arrays" = .{
             .url = "https://github.com/dweiller/zig-strided-arrays/archive/d47d2b50435549ce77b55e86be1fd28d0154b453.tar.gz",
