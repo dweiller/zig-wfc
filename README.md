@@ -5,7 +5,30 @@ A generic library implementing the *wave function collapse* algorithm. This libr
 
 ## Using zig-wfc
 
-To include `zig-wfc` into a Zig project using the Zig build system, import `build.zig` and call the `getPackage()` function; this will give you a `std.Build.Pkg` with the name `"wfc"`. See the test program at `src/main.zig` for an example of usage.
+You can use `zig-wfc` in a Zig project with the Zig build system. Include a dependency in your `build.zig.zon`, e.g.:
+```
+.dependencies = .{
+    .zig_wfc = .{
+        .url = "https://github.com/dweiller/zig-wfc/archive/[[COMMIT_HASH]].tar.gz",
+        .hash = "[[ZIG_PACKAGE_HASH]]",
+    },
+}
+```
+
+Then retrieve the `wfc` module from the dependency in your `build.zig`:
+```
+pub fn build(b: *std.Build) !void {
+
+    // -- snip --
+
+    const wfc = b.dependency("zig_wfc", .{}).module("wfc");
+
+    // assuming you have a `std.Build.Step.Compile` called 'exe' that wants to do WFC
+    exe.addModule("zig-wfc", wfc);
+}
+```
+
+You can ascertain the correct value for `[[ZIG_PACKAGE_HASH]]` by leaving that field out initially; this make Zig report the correct hash value.
 
 ## WFC Core
 
@@ -14,7 +37,7 @@ WFC is sometimes considered as having two different modes: overlapping and tiled
 The most common situation is generating a 2D or 3D cubic tiling and this library is currently restricted to 2-dimensional rectangular tilings.
 
 ## Features (and todos)
-  
+
   - [x] generic core algorithm you can use with any set of (2D) tiles/edge constraints forming a rectangular grid
   - [x] generate tiles from image (overlapping mode)
   - [x] seeded generation
