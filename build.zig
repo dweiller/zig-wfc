@@ -52,8 +52,10 @@ pub fn build(b: *std.Build) void {
     wfc_tests.addModule("zubench", zubench);
     wfc_tests.addModule(strided_arrays_dep.name, strided_arrays_dep.module);
 
+    const wfc_tests_run = b.addRunArtifact(wfc_tests);
+
     const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&wfc_tests.step);
+    test_step.dependOn(&wfc_tests_run.step);
 
     const bench_step = b.step("bench", "Run the benchmarks");
 
