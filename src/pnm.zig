@@ -74,9 +74,9 @@ pub fn readPNM(allocator: Allocator, reader: anytype) !PNM {
         return Error.MissingWhitespace;
     }
 
-    var buf = try allocator.alloc(u8, width * height);
-    const pixel_data = bytes[index .. index + buf.len];
-    std.mem.copy(u8, buf, pixel_data);
+    const buf = try allocator.alloc(u8, width * height);
+    const pixel_data = bytes[index..][0..buf.len];
+    @memcpy(buf, pixel_data);
 
     return PNM{
         .header = .{
@@ -102,7 +102,7 @@ fn skipRestOfLine(index: *usize, bytes: []const u8) void {
 }
 
 fn skip(index: *usize, bytes: []const u8) void {
-    var last_index: usize = 0;
+    const last_index: usize = 0;
     while (!isDigit(bytes[index.*]) and last_index != index.*) {
         skipWhitespace(index, bytes);
         if (bytes[index.*] == '#')

@@ -41,7 +41,7 @@ pub fn dumpPossible(cell_grid: core.CellGrid) void {
             std.debug.print("┤\n", .{});
         }
         const row_start = row * cols;
-        for (cells[row_start .. row_start + cols]) |cell| {
+        for (cells[row_start..][0..cols]) |cell| {
             std.debug.print("│", .{});
             for (cell.possible, 0..) |possible, tile_index| {
                 if (possible) {

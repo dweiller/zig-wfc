@@ -24,7 +24,7 @@ pub const Error = error{ OutOfMemory, Contradiction };
 pub const SeedGrid = StridedArrayView(Cell.State, 2);
 
 pub fn initSeedGrid(allocator: Allocator, shape: Shape) !SeedGrid {
-    var buf = try allocator.alloc(Cell.State, SeedGrid.sizeOf(shape));
+    const buf = try allocator.alloc(Cell.State, SeedGrid.sizeOf(shape));
     return SeedGrid.ofSlicePacked(buf, shape) catch unreachable;
 }
 
@@ -51,7 +51,7 @@ pub const CellGrid = struct {
         var iter = cells.iterate();
         while (iter.nextPtrWithIndex()) |item| {
             const start = item.index * tile_count;
-            item.ptr.enablers = enabler_data[start .. start + tile_count];
+            item.ptr.enablers = enabler_data[start..][0..tile_count];
         }
         return CellGrid{
             .cells = cells,
@@ -223,7 +223,7 @@ pub const Adjacencies = struct {
     allowed_edges: [][directions.len]TileSet,
 
     pub fn init(allocator: Allocator, tile_count: TileIndex) !Self {
-        var buf = try allocator.alloc([4]TileSet, tile_count);
+        const buf = try allocator.alloc([4]TileSet, tile_count);
         for (buf) |*by_direction| {
             for (by_direction) |*tile_set| {
                 tile_set.* = TileSet.initEmpty();
@@ -697,7 +697,8 @@ pub fn tile(
             while (iter.nextPtrWithCoord()) |item| {
                 const seed = seed_grid.cells.get(item.coord);
                 item.ptr.state = seed.state;
-                std.mem.copy(EnablerCounts, item.ptr.enablers, seed.enablers);
+                std.debug.assert(item.ptr.enablers.len == seed.enablers.len);
+                @memcpy(item.ptr.enablers, seed.enablers);
             }
         }
         state.removals.clearRetainingCapacity();
@@ -785,7 +786,7 @@ pub const benchmarks = benchmarks: {
     };
 
     const output_shape = TileGrid.Indices{ 64, 64 };
-    var args = std.meta.ArgsTuple(@TypeOf(generateAlloc)){
+    const args = std.meta.ArgsTuple(@TypeOf(generateAlloc)){
         bench_allocator,
         bench_allocator,
         input,
