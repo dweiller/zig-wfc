@@ -2,28 +2,21 @@ const std = @import("std");
 const addBench = @import("zubench").addBench;
 
 pub fn build(b: *std.Build) void {
-    // Standard target options allows the person running `zig build` to choose
-    // what target to build for. Here we do not override the defaults, which
-    // means any target is allowed, and the default is native. Other options
-    // for restricting supported target set are available.
     const target = b.standardTargetOptions(.{});
-
-    // Standard release options allow the person running `zig build` to select
-    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardOptimizeOption(.{});
 
     const zubench = b.dependency("zubench", .{}).module("zubench");
     const strided_arrays_pkg = b.dependency("strided-arrays", .{});
 
     const strided_arrays = strided_arrays_pkg.module("strided-arrays");
-    const strided_arrays_dep = std.Build.ModuleDependency{
+    const strided_arrays_dep = std.Build.Module.Import{
         .name = "strided-arrays",
         .module = strided_arrays,
     };
 
     _ = b.addModule("wfc", .{
-        .source_file = .{ .path = "src/wfc.zig" },
-        .dependencies = &.{strided_arrays_dep},
+        .root_source_file = .{ .path = "src/wfc.zig" },
+        .imports = &.{strided_arrays_dep},
     });
 
     const exe = b.addExecutable(.{
@@ -32,7 +25,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = mode,
     });
-    exe.addModule(strided_arrays_dep.name, strided_arrays_dep.module);
+    exe.root_module.addImport(strided_arrays_dep.name, strided_arrays_dep.module);
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
@@ -49,8 +42,8 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = mode,
     });
-    wfc_tests.addModule("zubench", zubench);
-    wfc_tests.addModule(strided_arrays_dep.name, strided_arrays_dep.module);
+    wfc_tests.root_module.addImport("zubench", zubench);
+    wfc_tests.root_module.addImport(strided_arrays_dep.name, strided_arrays_dep.module);
 
     const wfc_tests_run = b.addRunArtifact(wfc_tests);
 
@@ -60,7 +53,7 @@ pub fn build(b: *std.Build) void {
     const bench_step = b.step("bench", "Run the benchmarks");
 
     inline for (.{ .ReleaseSafe, .ReleaseFast, .ReleaseSmall }) |b_mode| {
-        const bench_exe = addBench(b, "src/core.zig", b_mode, zubench, &.{strided_arrays_dep});
+        const bench_exe = addBench(b, "src/core.zig", target, b_mode, zubench, &.{strided_arrays_dep});
         const cmd = b.addRunArtifact(bench_exe);
         bench_step.dependOn(&cmd.step);
     }

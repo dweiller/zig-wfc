@@ -1,15 +1,15 @@
 .{
     .name = "zig-wfc",
     .version = "0.0.0",
-    .paths = .{ "LICENSE", "build.zig", "build.zig.zon", "src" },
+    .paths = .{ "LICENSE", "build.zig", "build.zig.zon", "src", "README.md" },
     .dependencies = .{
         .@"strided-arrays" = .{
-            .url = "https://github.com/dweiller/zig-strided-arrays/archive/d47d2b50435549ce77b55e86be1fd28d0154b453.tar.gz",
-            .hash = "122047afb111ea7acfabe1d3d135c1f78d3793ca0adcb036b021e9a1a0ca052f98c2",
+            .url = "https://github.com/dweiller/zig-strided-arrays/archive/d04d7ad35841e6c2b16eeb35ddbf86a87dc517a9.tar.gz",
+            .hash = "1220e3f496610db22be00e73584f5a61af98e8976e79df4edf0d77e6185b1248a5e0",
         },
         .zubench = .{
-            .url = "https://github.com/dweiller/zubench/archive/83cbcffc80b6157aff7dd2d1209bca4de2ead5b9.tar.gz",
-            .hash = "1220088c34e317eed0f6fe76f4ff51fe70fa72ea2042064f8fcce7d54c7fcb0defb2",
+            .url = "https://github.com/dweiller/zubench/archive/737f882cae2323356405d11b3302126c09a9e0aa.tar.gz",
+            .hash = "1220aa6cf1fc66f49f3a49a20093eac2ba8da148e12926b447aa519564bbd08774dd",
         },
     },
 }
