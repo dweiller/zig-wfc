@@ -8,8 +8,8 @@
             .hash = "1220e3f496610db22be00e73584f5a61af98e8976e79df4edf0d77e6185b1248a5e0",
         },
         .zubench = .{
-            .url = "https://github.com/dweiller/zubench/archive/737f882cae2323356405d11b3302126c09a9e0aa.tar.gz",
-            .hash = "1220aa6cf1fc66f49f3a49a20093eac2ba8da148e12926b447aa519564bbd08774dd",
+            .url = "https://github.com/dweiller/zubench/archive/30a0f7fa1f78548a0bc26851b2d326301adbbe91.tar.gz",
+            .hash = "122097cd1e931f9c60adc987800e0ae789c1ac69f4b7061caa70f4a06109941c3039",
         },
     },
 }
