@@ -251,7 +251,7 @@ pub const GenInput = struct {
     seed: usize,
     tile_count: TileIndex,
     adjacency_rules: Adjacencies,
-    weights: []Weight,
+    weights: []const Weight,
     constraints: ?[]constraint.Count = null,
 
     pub fn init(allocator: Allocator, seed: usize, tile_count: TileIndex) !GenInput {
@@ -735,53 +735,54 @@ test {
 
 var bench_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const bench_allocator = bench_gpa.allocator();
-pub const benchmarks = benchmarks: {
-    const tile_count = 4;
-    const adjecencies = adj: {
-        var edges = edges: {
-            var adj_0 = [1]TileSet{TileSet.initEmpty()} ** 4;
-            adj_0[0].set(0);
-            adj_0[0].set(2);
-            adj_0[1].set(0);
-            adj_0[1].set(1);
-            adj_0[2].set(0);
-            adj_0[2].set(2);
-            adj_0[3].set(0);
-            adj_0[3].set(1);
-            var adj_1 = [1]TileSet{TileSet.initEmpty()} ** 4;
-            adj_1[0].set(1);
-            adj_1[0].set(3);
-            adj_1[1].set(0);
-            adj_1[2].set(1);
-            adj_1[2].set(3);
-            adj_1[3].set(0);
-            var adj_2 = [1]TileSet{TileSet.initEmpty()} ** 4;
-            adj_2[0].set(0);
-            adj_2[1].set(2);
-            adj_2[1].set(3);
-            adj_2[2].set(0);
-            adj_2[3].set(2);
-            adj_2[3].set(3);
-            var adj_3 = [1]TileSet{TileSet.initEmpty()} ** 4;
-            adj_3[0].set(1);
-            adj_3[1].set(2);
-            adj_3[2].set(1);
-            adj_3[3].set(2);
-            break :edges [tile_count][4]TileSet{
-                adj_0,
-                adj_1,
-                adj_2,
-                adj_3,
-            };
-        };
-        break :adj Adjacencies{ .allowed_edges = edges[0..] };
-    };
 
-    var weights = [_]Weight{ 1, 1, 1, 1 };
+const bench_tile_count = 4;
+
+var bench_edges = edges: {
+    var adj_0 = [1]TileSet{TileSet.initEmpty()} ** 4;
+    adj_0[0].set(0);
+    adj_0[0].set(2);
+    adj_0[1].set(0);
+    adj_0[1].set(1);
+    adj_0[2].set(0);
+    adj_0[2].set(2);
+    adj_0[3].set(0);
+    adj_0[3].set(1);
+    var adj_1 = [1]TileSet{TileSet.initEmpty()} ** 4;
+    adj_1[0].set(1);
+    adj_1[0].set(3);
+    adj_1[1].set(0);
+    adj_1[2].set(1);
+    adj_1[2].set(3);
+    adj_1[3].set(0);
+    var adj_2 = [1]TileSet{TileSet.initEmpty()} ** 4;
+    adj_2[0].set(0);
+    adj_2[1].set(2);
+    adj_2[1].set(3);
+    adj_2[2].set(0);
+    adj_2[3].set(2);
+    adj_2[3].set(3);
+    var adj_3 = [1]TileSet{TileSet.initEmpty()} ** 4;
+    adj_3[0].set(1);
+    adj_3[1].set(2);
+    adj_3[2].set(1);
+    adj_3[3].set(2);
+    break :edges [bench_tile_count][4]TileSet{
+        adj_0,
+        adj_1,
+        adj_2,
+        adj_3,
+    };
+};
+
+pub const benchmarks = benchmarks: {
+    const adjacencies: Adjacencies = .{ .allowed_edges = bench_edges[0..] };
+
+    const weights = [_]Weight{ 1, 1, 1, 1 };
     const input = GenInput{
         .seed = 0,
-        .tile_count = tile_count,
-        .adjacency_rules = adjecencies,
+        .tile_count = bench_tile_count,
+        .adjacency_rules = adjacencies,
         .weights = &weights,
     };
 
