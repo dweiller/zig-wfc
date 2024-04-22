@@ -53,7 +53,7 @@ pub fn build(b: *std.Build) void {
     const bench_step = b.step("bench", "Run the benchmarks");
 
     inline for (.{ .ReleaseSafe, .ReleaseFast, .ReleaseSmall }) |b_mode| {
-        const bench_exe = addBench(b, "src/core.zig", target, b_mode, zubench, &.{strided_arrays_dep});
+        const bench_exe = addBench(b, "src/core.zig", target, b_mode, &.{strided_arrays_dep});
         const cmd = b.addRunArtifact(bench_exe);
         bench_step.dependOn(&cmd.step);
     }
