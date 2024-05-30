@@ -4,8 +4,8 @@
     .paths = .{ "LICENSE", "build.zig", "build.zig.zon", "src", "README.md" },
     .dependencies = .{
         .@"strided-arrays" = .{
-            .url = "https://github.com/dweiller/zig-strided-arrays/archive/d04d7ad35841e6c2b16eeb35ddbf86a87dc517a9.tar.gz",
-            .hash = "1220e3f496610db22be00e73584f5a61af98e8976e79df4edf0d77e6185b1248a5e0",
+            .url = "https://github.com/dweiller/zig-strided-arrays/archive/346d0744344304fa33f40afaac346e50666a9a30.tar.gz",
+            .hash = "122090c8b231470720b409ae31a994cada072e1431cc9d3e459c1f038b2aebd9e0a5",
         },
         .zubench = .{
             .url = "https://github.com/dweiller/zubench/archive/8aa20b46178d65930df795e5a28b5769d3d6656f.tar.gz",
