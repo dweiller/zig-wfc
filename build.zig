@@ -15,13 +15,13 @@ pub fn build(b: *std.Build) void {
     };
 
     _ = b.addModule("wfc", .{
-        .root_source_file = .{ .path = "src/wfc.zig" },
+        .root_source_file = b.path("src/wfc.zig"),
         .imports = &.{strided_arrays_dep},
     });
 
     const exe = b.addExecutable(.{
         .name = "zig-wfc",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = mode,
     });
@@ -38,7 +38,7 @@ pub fn build(b: *std.Build) void {
     run_step.dependOn(&run_cmd.step);
 
     const wfc_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/wfc.zig" },
+        .root_source_file = b.path("src/wfc.zig"),
         .target = target,
         .optimize = mode,
     });
