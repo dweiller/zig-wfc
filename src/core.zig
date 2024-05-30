@@ -399,13 +399,14 @@ const EntropyHeap = struct {
         // (see updateEntropyHeap()).
         std.debug.assert(heap_buffer.len <= heap_context.len);
         self.fba = std.heap.FixedBufferAllocator.init(std.mem.sliceAsBytes(heap_buffer));
+        self.fba.end_index = self.fba.buffer.len;
         self.heap = Heap.init(self.fba.allocator(), heap_context);
-        self.heap.items = heap_buffer;
+        self.heap.items = heap_buffer[0..0];
+        self.heap.cap = heap_buffer.len;
     }
 
     pub fn reset(self: *Self) void {
-        self.fba.reset();
-        self.heap.len = 0;
+        self.heap.items.len = 0;
     }
 
     pub fn initEntropies(self: *Self, cell_grid: CellGrid, weights: []const Weight) void {
@@ -423,7 +424,7 @@ const EntropyHeap = struct {
                     self.heap.add(item_ind.index) catch {
                         std.debug.panic(
                             "ran out of memory adding entropy coord {d}\nheap has size {d}",
-                            .{ item_ind.index, self.heap.items.len },
+                            .{ item_ind.index, self.heap.capacity() },
                         );
                     };
                 },
@@ -533,7 +534,7 @@ pub const CoreState = struct {
             const index = self.cell_grid.cells.sliceIndex(coord);
             const remove_index = std.mem.indexOfScalar(
                 usize,
-                self.entropy_heap.heap.items[0..self.entropy_heap.heap.len],
+                self.entropy_heap.heap.items,
                 index,
             ) orelse
                 std.debug.panic("could not find tile index {d} in entropy heap", .{index});
