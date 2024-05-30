@@ -253,14 +253,6 @@ fn printGrid(tile_grid: wfc.TileGrid, tile_map: []const []const u8, rows: usize,
         }
         try stdout.print("┐\n", .{});
     }
-    try stdout.print("│", .{});
-    {
-        var iter = tile_grid.iterateTo(cols);
-        while (iter.next()) |tile_index| {
-            try stdout.print("{s}", .{tile_map[tile_index]});
-        }
-    }
-    try stdout.print("│\n", .{});
     for (0..rows) |row| {
         try stdout.print("│", .{});
         const row_start = row * cols;
