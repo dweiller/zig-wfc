@@ -462,7 +462,7 @@ pub const CoreState = struct {
     weights: []const Weight,
     removals: RemovalStack,
     entropy_heap: EntropyHeap,
-    random: std.rand.Random,
+    random: std.Random,
 
     pub fn chooseCellToCollapse(self: *Self) ?Coord {
         const entropy_coord_idx = self.entropy_heap.heap.removeOrNull() orelse return null;
@@ -470,7 +470,7 @@ pub const CoreState = struct {
         return entropy_coord.coord;
     }
 
-    fn observedTile(random: std.rand.Random, possible: TileSet, weights: []const Weight) TileIndex {
+    fn observedTile(random: std.Random, possible: TileSet, weights: []const Weight) TileIndex {
         var remaining = random.uintLessThan(usize, Cell.possibleWeight(possible, weights));
         var iter = possible.iterator(.{});
         while (iter.next()) |i| {
@@ -677,7 +677,7 @@ pub fn tile(
     input: GenInput,
     limit: usize,
 ) error{ OutOfMemory, AttemptLimitReached }!usize {
-    var rng = std.rand.Xoshiro256{ .s = undefined }; //initialised in loop
+    var rng = std.Random.Xoshiro256{ .s = undefined }; //initialised in loop
 
     var state = CoreState{
         .random = rng.random(),
