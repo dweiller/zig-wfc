@@ -251,7 +251,7 @@ pub const GenInput = struct {
     seed: usize,
     tile_count: TileIndex,
     adjacency_rules: Adjacencies,
-    weights: []const Weight,
+    weights: []Weight,
     constraints: ?[]constraint.Count = null,
 
     pub fn init(allocator: Allocator, seed: usize, tile_count: TileIndex) !GenInput {
@@ -734,68 +734,71 @@ test {
     std.testing.refAllDecls(@This());
 }
 
-var bench_gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const bench_allocator = bench_gpa.allocator();
+const bench_ns = struct {
+    var bench_gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const bench_allocator = bench_gpa.allocator();
 
-const bench_tile_count = 4;
+    const bench_tile_count = 4;
 
-var bench_edges = edges: {
-    var adj_0 = [1]TileSet{TileSet.initEmpty()} ** 4;
-    adj_0[0].set(0);
-    adj_0[0].set(2);
-    adj_0[1].set(0);
-    adj_0[1].set(1);
-    adj_0[2].set(0);
-    adj_0[2].set(2);
-    adj_0[3].set(0);
-    adj_0[3].set(1);
-    var adj_1 = [1]TileSet{TileSet.initEmpty()} ** 4;
-    adj_1[0].set(1);
-    adj_1[0].set(3);
-    adj_1[1].set(0);
-    adj_1[2].set(1);
-    adj_1[2].set(3);
-    adj_1[3].set(0);
-    var adj_2 = [1]TileSet{TileSet.initEmpty()} ** 4;
-    adj_2[0].set(0);
-    adj_2[1].set(2);
-    adj_2[1].set(3);
-    adj_2[2].set(0);
-    adj_2[3].set(2);
-    adj_2[3].set(3);
-    var adj_3 = [1]TileSet{TileSet.initEmpty()} ** 4;
-    adj_3[0].set(1);
-    adj_3[1].set(2);
-    adj_3[2].set(1);
-    adj_3[3].set(2);
-    break :edges [bench_tile_count][4]TileSet{
-        adj_0,
-        adj_1,
-        adj_2,
-        adj_3,
-    };
-};
-
-pub const benchmarks = benchmarks: {
-    const adjacencies: Adjacencies = .{ .allowed_edges = bench_edges[0..] };
-
-    const weights = [_]Weight{ 1, 1, 1, 1 };
-    const input = GenInput{
-        .seed = 0,
-        .tile_count = bench_tile_count,
-        .adjacency_rules = adjacencies,
-        .weights = &weights,
+    var bench_edges = edges: {
+        var adj_0 = [1]TileSet{TileSet.initEmpty()} ** 4;
+        adj_0[0].set(0);
+        adj_0[0].set(2);
+        adj_0[1].set(0);
+        adj_0[1].set(1);
+        adj_0[2].set(0);
+        adj_0[2].set(2);
+        adj_0[3].set(0);
+        adj_0[3].set(1);
+        var adj_1 = [1]TileSet{TileSet.initEmpty()} ** 4;
+        adj_1[0].set(1);
+        adj_1[0].set(3);
+        adj_1[1].set(0);
+        adj_1[2].set(1);
+        adj_1[2].set(3);
+        adj_1[3].set(0);
+        var adj_2 = [1]TileSet{TileSet.initEmpty()} ** 4;
+        adj_2[0].set(0);
+        adj_2[1].set(2);
+        adj_2[1].set(3);
+        adj_2[2].set(0);
+        adj_2[3].set(2);
+        adj_2[3].set(3);
+        var adj_3 = [1]TileSet{TileSet.initEmpty()} ** 4;
+        adj_3[0].set(1);
+        adj_3[1].set(2);
+        adj_3[2].set(1);
+        adj_3[3].set(2);
+        break :edges [bench_tile_count][4]TileSet{
+            adj_0,
+            adj_1,
+            adj_2,
+            adj_3,
+        };
     };
 
-    const output_shape = TileGrid.Indices{ 64, 64 };
-    const args = std.meta.ArgsTuple(@TypeOf(generateAlloc)){
-        bench_allocator,
-        bench_allocator,
-        input,
-        output_shape,
-        1,
-    };
-    break :benchmarks .{
-        .@"generateAlloc() 64x64" = @import("zubench").Spec(generateAlloc){ .args = args, .max_samples = 500 },
+    var weights = [_]Weight{ 1, 1, 1, 1 };
+
+    pub const benchmarks = benchmarks: {
+        const adjacencies: Adjacencies = .{ .allowed_edges = bench_edges[0..] };
+
+        const input = GenInput{
+            .seed = 0,
+            .tile_count = bench_tile_count,
+            .adjacency_rules = adjacencies,
+            .weights = &weights,
+        };
+
+        const output_shape = TileGrid.Indices{ 64, 64 };
+        const args = std.meta.ArgsTuple(@TypeOf(generateAlloc)){
+            bench_allocator,
+            bench_allocator,
+            input,
+            output_shape,
+            1,
+        };
+        break :benchmarks .{
+            .@"generateAlloc() 64x64" = @import("zubench").Spec(generateAlloc){ .args = args, .max_samples = 500 },
+        };
     };
 };
