@@ -132,7 +132,7 @@ pub fn ofGrid(allocator: Allocator, colour_map: anytype, grid: core.TileGrid) !P
     const MapType = @TypeOf(colour_map);
     const err_msg = "Colour map must have type []const u8 or []const [3]u8, got " ++ @typeName(MapType);
     const typ = switch (@typeInfo(MapType)) {
-        .Pointer => |info| switch (info.size) {
+        .pointer => |info| switch (info.size) {
             .Slice => switch (info.child) {
                 u8 => Type.PGM,
                 [3]u8 => Type.PPM,
