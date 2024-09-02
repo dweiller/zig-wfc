@@ -802,3 +802,5 @@ const bench_ns = struct {
         };
     };
 };
+
+pub const benchmarks = bench_ns.benchmarks;
