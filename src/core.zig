@@ -168,7 +168,7 @@ pub const CellGrid = struct {
             }
         }
 
-        while (removals.popOrNull()) |removal| {
+        while (removals.pop()) |removal| {
             switch (cells.getPtr(removal.coord).state) {
                 .superposition => |*possible| {
                     if (possible.isSet(removal.tile_index)) {
@@ -545,7 +545,7 @@ pub const CoreState = struct {
     }
 
     pub fn propagateInfo(self: *Self) Error!void {
-        while (self.removals.popOrNull()) |removal| {
+        while (self.removals.pop()) |removal| {
             for (directions) |direction| {
                 const neighbour_coord = neighbouringCoord(removal.coord, direction, self.cell_grid.cells.shape) orelse continue;
                 const neighbour = self.cell_grid.cells.getPtr(neighbour_coord);
