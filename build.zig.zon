@@ -2,16 +2,18 @@
     .name = .zig_wfc,
     .fingerprint = 0xf451383668953641,
     .version = "0.0.0",
-    .paths = .{ "LICENSE", "build.zig", "build.zig.zon", "src", "README.md" },
-    .minimum_zig_version = "0.14.0",
+    .paths = .{
+        "LICENSE",
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "README.md",
+    },
+    .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .@"strided-arrays" = .{
-            .url = "https://github.com/dweiller/zig-strided-arrays/archive/b32e31f767c294a218ff857ac9b6068629e775b7.tar.gz",
-            .hash = "strided_array-0.0.0-bRJh7EvCAADimJNom3qbzLC3dsiFvAiGRk50x-HoV4KR",
-        },
-        .zubench = .{
-            .url = "https://github.com/dweiller/zubench/archive/53140a07a6ee27e28549c46209d900ba92f61ceb.tar.gz",
-            .hash = "zubench-0.0.0-kIvtMziVAABBkFpJIF0hfbKvx04ZEE9P_G9Xu_xQvb7n",
+            .url = "git+https://github.com/dweiller/zig-strided-arrays.git#f0151f11c121099ee373ea3d485f835ae6abf74d",
+            .hash = "strided_array-0.0.0-bRJh7BXCAAAplUBK57yzs5eNRkqlan0Dw1ROcu348Sze",
         },
     },
 }

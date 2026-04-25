@@ -47,8 +47,8 @@ pub const PNM = struct {
     raster: []u8,
 };
 
-pub fn readPNM(allocator: Allocator, reader: anytype) !PNM {
-    const bytes = try reader.readAllAlloc(allocator, 4096);
+pub fn readPNM(allocator: Allocator, reader: *std.Io.Reader) !PNM {
+    const bytes = try reader.allocRemaining(allocator, .unlimited);
     defer allocator.free(bytes);
 
     const typ: Type = if (std.mem.eql(u8, bytes[0..2], "P5"))
@@ -123,8 +123,8 @@ fn readNumber(index: *usize, bytes: []const u8) !usize {
     return try std.fmt.parseInt(usize, bytes[start..index.*], 10);
 }
 
-pub fn writePNM(writer: anytype, pnm: PNM) !void {
-    try writer.print("{[type]s}\n{[width]d} {[height]d}\n{[max]d}\n", pnm.header);
+pub fn writePNM(writer: *std.Io.Writer, pnm: PNM) !void {
+    try writer.print("{[type]t}\n{[width]d} {[height]d}\n{[max]d}\n", pnm.header);
     try writer.writeAll(pnm.raster);
 }
 

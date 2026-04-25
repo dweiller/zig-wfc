@@ -1,11 +1,9 @@
 const std = @import("std");
-const addBench = @import("zubench").addBench;
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const mode = b.standardOptimizeOption(.{});
 
-    const zubench = b.dependency("zubench", .{}).module("zubench");
     const strided_arrays_pkg = b.dependency("strided-arrays", .{});
 
     const strided_arrays = strided_arrays_pkg.module("strided-arrays");
@@ -21,9 +19,11 @@ pub fn build(b: *std.Build) void {
 
     const exe = b.addExecutable(.{
         .name = "zig-wfc",
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = mode,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = mode,
+        }),
     });
     exe.root_module.addImport(strided_arrays_dep.name, strided_arrays_dep.module);
     b.installArtifact(exe);
@@ -38,23 +38,16 @@ pub fn build(b: *std.Build) void {
     run_step.dependOn(&run_cmd.step);
 
     const wfc_tests = b.addTest(.{
-        .root_source_file = b.path("src/wfc.zig"),
-        .target = target,
-        .optimize = mode,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/wfc.zig"),
+            .target = target,
+            .optimize = mode,
+        }),
     });
-    wfc_tests.root_module.addImport("zubench", zubench);
     wfc_tests.root_module.addImport(strided_arrays_dep.name, strided_arrays_dep.module);
 
     const wfc_tests_run = b.addRunArtifact(wfc_tests);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&wfc_tests_run.step);
-
-    const bench_step = b.step("bench", "Run the benchmarks");
-
-    inline for (.{ .ReleaseSafe, .ReleaseFast, .ReleaseSmall }) |b_mode| {
-        const bench_exe = addBench(b, "src/core.zig", target, b_mode, &.{strided_arrays_dep});
-        const cmd = b.addRunArtifact(bench_exe);
-        bench_step.dependOn(&cmd.step);
-    }
 }

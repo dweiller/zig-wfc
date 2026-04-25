@@ -102,14 +102,19 @@ fn buildAdjacency(adjacencies: Adjacencies, tiles: []TileGrid) void {
 
 /// caller own returned memory; call deinit() to free
 pub fn overlappingTiles(allocator: Allocator, tile_grid: TileGrid, size: u32) !TileInfo {
-    var arena = std.heap.ArenaAllocator.init(allocator);
-    defer arena.deinit();
-    const arena_a = arena.allocator();
-    var tiles = TilesMap.init(arena_a);
+    var tiles = TilesMap.init(allocator);
+    defer tiles.deinit();
+    errdefer {
+        var iter = tiles.keyIterator();
+        while (iter.next()) |key| {
+            allocator.free(key.*);
+        }
+    }
 
     var tile_index: TileIndex = 0;
 
-    var extracted_tiles = std.ArrayList(TileGrid).init(allocator);
+    var extracted_tiles: std.ArrayList(TileGrid) = .empty;
+    errdefer extracted_tiles.deinit(allocator);
 
     {
         var iter = tile_grid.iterate();
@@ -127,7 +132,7 @@ pub fn overlappingTiles(allocator: Allocator, tile_grid: TileGrid, size: u32) !T
                     .count = 1,
                     .map_index = @intCast(item.index),
                 };
-                try extracted_tiles.append(TileGrid.ofSlicePacked(extract_buf, .{ size, size }) catch unreachable);
+                try extracted_tiles.append(allocator, TileGrid.ofSlicePacked(extract_buf, .{ size, size }) catch unreachable);
                 tile_index += 1;
             }
         }
@@ -137,11 +142,14 @@ pub fn overlappingTiles(allocator: Allocator, tile_grid: TileGrid, size: u32) !T
         return error.TooManyUniqueTiles;
 
     const adjacencies = try core.Adjacencies.init(allocator, count);
+    errdefer adjacencies.deinit(allocator);
 
     buildAdjacency(adjacencies, extracted_tiles.items);
 
     var map = try allocator.alloc(TileIndex, count);
+    errdefer allocator.free(map);
     var weight = try allocator.alloc(Weight, count);
+    errdefer allocator.free(weight);
 
     var iter = tiles.valueIterator();
     while (iter.next()) |tile| {
@@ -154,7 +162,7 @@ pub fn overlappingTiles(allocator: Allocator, tile_grid: TileGrid, size: u32) !T
         .adjacencies = adjacencies,
         .map = map,
         .weight = weight,
-        .tiles = try extracted_tiles.toOwnedSlice(),
+        .tiles = try extracted_tiles.toOwnedSlice(allocator),
     };
 }
 
