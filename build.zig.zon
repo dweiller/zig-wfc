@@ -3,6 +3,7 @@
     .fingerprint = 0xf451383668953641,
     .version = "0.0.0",
     .paths = .{ "LICENSE", "build.zig", "build.zig.zon", "src", "README.md" },
+    .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .@"strided-arrays" = .{
             .url = "https://github.com/dweiller/zig-strided-arrays/archive/b32e31f767c294a218ff857ac9b6068629e775b7.tar.gz",
