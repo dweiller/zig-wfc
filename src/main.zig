@@ -25,21 +25,21 @@ const Options = struct {
     positionals: []const []const u8,
 };
 
-fn parseCli(allocator: std.mem.Allocator) !Options {
-    var args = try std.process.argsWithAllocator(allocator);
-    std.debug.assert(args.skip());
+fn parseCli(allocator: std.mem.Allocator, args: std.process.Args) !Options {
+    var iter = try args.iterateAllocator(allocator);
+    defer iter.deinit();
 
-    var options = GenericOptions{};
+    var options: GenericOptions = .{};
     var mode: ?Mode = null;
 
-    var positionals = std.ArrayList([]const u8).init(allocator);
-    defer positionals.deinit();
+    var positionals: std.ArrayList([]const u8) = .empty;
+    errdefer positionals.deinit(allocator);
 
-    while (args.next()) |arg| {
+    while (iter.next()) |arg| {
         if (std.mem.eql(u8, "--seed", arg) or std.mem.eql(u8, "-s", arg)) {
-            options.seed = try std.fmt.parseInt(usize, args.next() orelse missingArg("seed"), 10);
+            options.seed = try std.fmt.parseInt(usize, iter.next() orelse missingArg("seed"), 10);
         } else if (std.mem.eql(u8, "--size", arg) or std.mem.eql(u8, "-o", arg)) {
-            options.size = try std.fmt.parseInt(u32, args.next() orelse missingArg("size"), 10);
+            options.size = try std.fmt.parseInt(u32, iter.next() orelse missingArg("size"), 10);
         } else if (std.mem.eql(u8, "--help", arg) or std.mem.eql(u8, "-h", arg)) {
             options.help = true;
         } else if (std.mem.eql(u8, "image", arg)) {
@@ -49,38 +49,47 @@ fn parseCli(allocator: std.mem.Allocator) !Options {
             if (mode != null) unexpectedArg(arg);
             mode = .@"test";
         } else if (mode != null and mode.? == .image and std.mem.eql(u8, "--output-tiles", arg)) {
-            const owned_arg = try allocator.dupe(u8, args.next() orelse missingArg("output-tiles"));
+            const owned_arg = try allocator.dupe(u8, iter.next() orelse missingArg("output-tiles"));
             mode.?.image.@"output-tiles" = owned_arg;
         } else if (mode != null and mode.? == .image and std.mem.eql(u8, "--filter-size", arg)) {
-            const number_arg = args.next() orelse missingArg("filter-size");
+            const number_arg = iter.next() orelse missingArg("filter-size");
             mode.?.image.@"filter-size" = try std.fmt.parseInt(
                 u32,
                 number_arg,
                 10,
             );
         } else {
-            try positionals.append(try allocator.dupe(u8, arg));
+            try positionals.append(allocator, try allocator.dupe(u8, arg));
         }
     }
 
     const result = Options{
         .options = options,
         .mode = mode,
-        .positionals = try positionals.toOwnedSlice(),
+        .positionals = try positionals.toOwnedSlice(allocator),
     };
     return result;
 }
 
-pub fn main() anyerror!void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+pub fn main(init: std.process.Init.Minimal) anyerror!void {
+    var gpa: std.heap.DebugAllocator(.{}) = .init;
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    const options = try parseCli(allocator);
+    var threaded: std.Io.Threaded = .init(allocator, .{});
+    const io = threaded.io();
+
+    const options = try parseCli(allocator, init.args);
+    defer {
+        for (options.positionals) |arg| {
+            allocator.free(arg);
+        }
+        allocator.free(options.positionals);
+    }
 
     if (options.mode) |m| {
         switch (m) {
-            .@"test" => try testMode(allocator, options.options),
+            .@"test" => try testMode(io, allocator, options.options),
             .image => |opts| {
                 if (options.positionals.len != 2) {
                     std.debug.print("Error: 2 arguments expected\n", .{});
@@ -89,6 +98,7 @@ pub fn main() anyerror!void {
                 const in_filename = options.positionals[0];
                 const out_filename = options.positionals[1];
                 try imageMode(
+                    io,
                     allocator,
                     options.options,
                     opts,
@@ -108,17 +118,19 @@ const Input = struct {
 };
 
 fn imageMode(
+    io: std.Io,
     allocator: std.mem.Allocator,
     options: GenericOptions,
     im_opts: ImageOptions,
     in_filename: []const u8,
     out_filename: []const u8,
 ) !void {
-    const cwd = std.fs.cwd();
+    const cwd = std.Io.Dir.cwd();
     const image = image: {
-        const in_file = try cwd.openFile(in_filename, .{});
-        defer in_file.close();
-        break :image try pnm.readPNM(allocator, in_file.reader());
+        const in_file = try cwd.openFile(io, in_filename, .{});
+        defer in_file.close(io);
+        var file_reader = in_file.reader(io, &.{});
+        break :image try pnm.readPNM(allocator, &file_reader.interface);
     };
     defer allocator.free(image.raster);
 
@@ -149,9 +161,9 @@ fn imageMode(
     defer allocator.free(out_image.raster);
 
     if (im_opts.@"output-tiles") |dirname| {
-        try cwd.makeDir(dirname);
-        var dir = try cwd.openDir(dirname, .{});
-        defer dir.close();
+        try cwd.createDirPath(io, dirname);
+        var dir = try cwd.openDir(io, dirname, .{});
+        defer dir.close(io);
 
         const buf = try allocator.alloc(u8, out_filename.len + "-tile-xxx".len);
         defer allocator.free(buf);
@@ -172,25 +184,28 @@ fn imageMode(
                 try std.fmt.bufPrint(buf, "{s}-tile-{d:0>3}{s}", .{ out_filename[0..idx], n, out_filename[idx..] })
             else
                 try std.fmt.bufPrint(buf, "{s}-tile-{d:0>3}", .{ out_filename, n });
-            const file = try dir.createFile(filename, .{});
-            defer file.close();
+            const file = try dir.createFile(io, filename, .{});
+            defer file.close(io);
 
-            try pnm.writePNM(file.writer(), tile_image);
+            var file_writer = file.writer(io, &.{});
+            try pnm.writePNM(&file_writer.interface, tile_image);
         }
 
-        const out_file = try dir.createFile(out_filename, .{});
-        defer out_file.close();
+        const out_file = try dir.createFile(io, out_filename, .{});
+        defer out_file.close(io);
 
-        try pnm.writePNM(out_file.writer(), out_image);
+        var out_file_writer = out_file.writer(io, &.{});
+        try pnm.writePNM(&out_file_writer.interface, out_image);
     } else {
-        const out_file = try cwd.createFile(out_filename, .{});
-        defer out_file.close();
+        const out_file = try cwd.createFile(io, out_filename, .{});
+        defer out_file.close(io);
 
-        try pnm.writePNM(out_file.writer(), out_image);
+        var out_file_writer = out_file.writer(io, &.{});
+        try pnm.writePNM(&out_file_writer.interface, out_image);
     }
 }
 
-fn testMode(allocator: std.mem.Allocator, options: GenericOptions) !void {
+fn testMode(io: std.Io, allocator: std.mem.Allocator, options: GenericOptions) !void {
     const tile_count = 4;
     const tile_map = [tile_count][]const u8{ " ", "┃", "━", "╋" };
     var adj_0 = [1]wfc.TileSet{wfc.TileSet.initEmpty()} ** 4;
@@ -241,11 +256,12 @@ fn testMode(allocator: std.mem.Allocator, options: GenericOptions) !void {
     const tile_grid = try wfc.generateAlloc(allocator, allocator, input, .{ options.size, options.size }, 10);
     defer allocator.free(tile_grid.items);
 
-    try printGrid(tile_grid, tile_map[0..], options.size, options.size);
+    try printGrid(io, tile_grid, tile_map[0..], options.size, options.size);
 }
 
-fn printGrid(tile_grid: wfc.TileGrid, tile_map: []const []const u8, rows: usize, cols: usize) !void {
-    const stdout = std.io.getStdOut().writer();
+fn printGrid(io: std.Io, tile_grid: wfc.TileGrid, tile_map: []const []const u8, rows: usize, cols: usize) !void {
+    var stdout_writer = std.Io.File.stdout().writer(io, &.{});
+    const stdout = &stdout_writer.interface;
     {
         try stdout.print("┌", .{});
         for (0..cols) |_| {

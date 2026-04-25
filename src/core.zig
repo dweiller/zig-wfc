@@ -371,7 +371,7 @@ const Removal = struct {
     tile_index: TileIndex,
     coord: Coord,
 };
-const RemovalStack = std.ArrayList(Removal);
+const RemovalStack = std.array_list.Managed(Removal);
 
 const EntropyCoord = struct {
     const Self = @This();
@@ -400,7 +400,7 @@ const EntropyHeap = struct {
         std.debug.assert(heap_buffer.len <= heap_context.len);
         self.fba = std.heap.FixedBufferAllocator.init(std.mem.sliceAsBytes(heap_buffer));
         self.fba.end_index = self.fba.buffer.len;
-        self.heap = Heap.init(self.fba.allocator(), heap_context);
+        self.heap = Heap.initContext(heap_context);
         self.heap.items = heap_buffer[0..0];
         self.heap.cap = heap_buffer.len;
     }
@@ -421,7 +421,7 @@ const EntropyHeap = struct {
                         .entropy = entropy,
                         .coord = item_ind.coord,
                     };
-                    self.heap.add(item_ind.index) catch {
+                    self.heap.push(self.fba.allocator(), item_ind.index) catch {
                         std.debug.panic(
                             "ran out of memory adding entropy coord {d}\nheap has size {d}",
                             .{ item_ind.index, self.heap.capacity() },
@@ -465,7 +465,7 @@ pub const CoreState = struct {
     random: std.Random,
 
     pub fn chooseCellToCollapse(self: *Self) ?Coord {
-        const entropy_coord_idx = self.entropy_heap.heap.removeOrNull() orelse return null;
+        const entropy_coord_idx = self.entropy_heap.heap.pop() orelse return null;
         const entropy_coord = self.entropy_heap.heap.context[entropy_coord_idx];
         return entropy_coord.coord;
     }
@@ -538,9 +538,10 @@ pub const CoreState = struct {
                 index,
             ) orelse
                 std.debug.panic("could not find tile index {d} in entropy heap", .{index});
-            _ = self.entropy_heap.heap.removeIndex(remove_index);
+            _ = self.entropy_heap.heap.popIndex(remove_index);
             self.entropy_heap.heap.context[index].entropy = new_entropy;
-            self.entropy_heap.heap.add(index) catch unreachable; //we just removed one so add() can't fail
+            // we just removed one so add() can't fail to push
+            self.entropy_heap.heap.push(self.entropy_heap.fba.allocator(), index) catch unreachable;
         }
     }
 
@@ -733,74 +734,3 @@ pub fn tile(
 test {
     std.testing.refAllDecls(@This());
 }
-
-const bench_ns = struct {
-    var bench_gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const bench_allocator = bench_gpa.allocator();
-
-    const bench_tile_count = 4;
-
-    var bench_edges = edges: {
-        var adj_0 = [1]TileSet{TileSet.initEmpty()} ** 4;
-        adj_0[0].set(0);
-        adj_0[0].set(2);
-        adj_0[1].set(0);
-        adj_0[1].set(1);
-        adj_0[2].set(0);
-        adj_0[2].set(2);
-        adj_0[3].set(0);
-        adj_0[3].set(1);
-        var adj_1 = [1]TileSet{TileSet.initEmpty()} ** 4;
-        adj_1[0].set(1);
-        adj_1[0].set(3);
-        adj_1[1].set(0);
-        adj_1[2].set(1);
-        adj_1[2].set(3);
-        adj_1[3].set(0);
-        var adj_2 = [1]TileSet{TileSet.initEmpty()} ** 4;
-        adj_2[0].set(0);
-        adj_2[1].set(2);
-        adj_2[1].set(3);
-        adj_2[2].set(0);
-        adj_2[3].set(2);
-        adj_2[3].set(3);
-        var adj_3 = [1]TileSet{TileSet.initEmpty()} ** 4;
-        adj_3[0].set(1);
-        adj_3[1].set(2);
-        adj_3[2].set(1);
-        adj_3[3].set(2);
-        break :edges [bench_tile_count][4]TileSet{
-            adj_0,
-            adj_1,
-            adj_2,
-            adj_3,
-        };
-    };
-
-    var weights = [_]Weight{ 1, 1, 1, 1 };
-
-    pub const benchmarks = benchmarks: {
-        const adjacencies: Adjacencies = .{ .allowed_edges = bench_edges[0..] };
-
-        const input = GenInput{
-            .seed = 0,
-            .tile_count = bench_tile_count,
-            .adjacency_rules = adjacencies,
-            .weights = &weights,
-        };
-
-        const output_shape = TileGrid.Indices{ 64, 64 };
-        const args = std.meta.ArgsTuple(@TypeOf(generateAlloc)){
-            bench_allocator,
-            bench_allocator,
-            input,
-            output_shape,
-            1,
-        };
-        break :benchmarks .{
-            .@"generateAlloc() 64x64" = @import("zubench").Spec(generateAlloc){ .args = args, .max_samples = 500 },
-        };
-    };
-};
-
-pub const benchmarks = bench_ns.benchmarks;
